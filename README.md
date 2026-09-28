@@ -153,6 +153,26 @@ tests/                      单元测试与端到端测试
 * `output.*`：输出采样率、位深、峰值上限、响度归一化
 * `cache.*`：缓存开关、后缀、zstd 等级
 
+## 分发产物
+
+```bash
+bash scripts/build_release.sh                 # 默认 feature，输出 dist/<target>.tar.gz
+bash scripts/build_release.sh --features cuda # 指定 feature
+```
+
+产物解压即用，内含二进制、默认配置、文档与 `models/*.onnx`（若本地已有模型）：
+
+```
+neural-resampler-x86_64-unknown-linux-gnu/
+├── resampler                 # 单二进制
+├── models/*.onnx             # 声码器 + FCPE
+├── config.resampler.yaml     # 默认配置，可直接改
+└── docs/ README.md LICENSE
+```
+
+模型未放入仓库，CI 与空白环境请用 `scripts/download_models.sh` 获取
+（可用 `NR_MODEL_MIRROR` 指定镜像前缀，脚本支持重试与断点续传）。
+
 ## 测试与 CI
 
 ```bash
