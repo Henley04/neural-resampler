@@ -1,10 +1,12 @@
 name: CI - Build & Test
 
+# 同时覆盖 main 与 master：仓库默认分支可能是两者之一，避免 CI 静默不触发。
 on:
   push:
-    branches: [main, develop]
+    branches: [main, master, develop]
   pull_request:
-    branches: [main]
+    branches: [main, master]
+  workflow_dispatch:
 
 env:
   CARGO_TERM_COLOR: always
