@@ -1,5 +1,7 @@
 # neural-resampler
 
+[![CI - Build & Test](https://github.com/Henley04/neural-resampler/actions/workflows/ci.yml/badge.svg)](https://github.com/Henley04/neural-resampler/actions/workflows/ci.yml)
+
 通用神经重采样器引擎 —— 用 **纯 Rust + ONNX** 重写的 HiFiSampler。
 
 传统声库的 WAV 与 `oto.ini` **完全不动**，只替换负责音高变换、时长调整和音色合成的 resampler 引擎：
