@@ -1,0 +1,129 @@
+name: CI - Build & Test
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  build-and-test:
+    name: Build & Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache Cargo dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Cache ONNX Runtime
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ort
+          key: onnxruntime-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
+
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+      # 注意：不能用 --all-features。GPU 提供者（cuda / directml / coreml）互斥，
+      # ort 无法为组合后的 feature set 找到预编译库，会链接失败。
+      - name: Run Clippy
+        run: cargo clippy --all-targets -- -D warnings
+
+      - name: Build (release)
+        run: cargo build --release --verbose
+
+      - name: Run unit tests
+        run: cargo test --lib --verbose
+
+      - name: Run integration tests
+        run: cargo test --test '*' --verbose
+
+      - name: Self test (end-to-end smoke)
+        run: cargo run --release -- selftest --out-dir target/selftest
+
+      - name: Upload release artifact
+        if: matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: resampler-windows
+          path: target/release/resampler.exe
+
+      - name: Upload release artifact (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: resampler-linux
+          path: target/release/resampler
+
+      - name: Upload release artifact (macOS)
+        if: matrix.os == 'macos-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: resampler-macos
+          path: target/release/resampler
+
+  onnx-model-validation:
+    name: ONNX Model Validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install ONNX Runtime
+        run: pip install onnxruntime numpy
+
+      - name: Validate FCPE ONNX model
+        # 仓库默认不含模型（体积大且受各自许可约束），模型存在时才验证
+        if: hashFiles('models/fcpe.onnx') != ''
+        run: |
+          python -c "
+          import onnxruntime as ort
+          import numpy as np
+          session = ort.InferenceSession('models/fcpe.onnx')
+          print('FCPE Inputs:', [(i.name, i.shape) for i in session.get_inputs()])
+          print('FCPE Outputs:', [(o.name, o.shape) for o in session.get_outputs()])
+          dummy_mel = np.random.randn(1, 100, 128).astype(np.float32)
+          outputs = session.run(None, {session.get_inputs()[0].name: dummy_mel})
+          print('F0 output shape:', outputs[0].shape)
+          assert outputs[0].shape[1] == 100, 'F0 frame count mismatch'
+          print('FCPE ONNX validation passed')
+          "
+
+      - name: Validate PC-NSF-HiFiGAN ONNX model
+        if: hashFiles('models/pc_nsf_hifigan.onnx') != ''
+        run: |
+          python -c "
+          import onnxruntime as ort
+          session = ort.InferenceSession('models/pc_nsf_hifigan.onnx')
+          print('Vocoder Inputs:', [(i.name, i.shape) for i in session.get_inputs()])
+          print('Vocoder Outputs:', [(o.name, o.shape) for o in session.get_outputs()])
+          print('Vocoder ONNX validation passed')
+          "

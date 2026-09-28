@@ -1,0 +1,24 @@
+# 构建产物
+/target/
+**/*.rs.bk
+*.pdb
+
+# ONNX 模型（体积大，不入库；由 scripts/download_models.sh 获取）
+/models/*.onnx
+/models/*.oudep
+/models/*.zip
+/models/*.pt
+/models/*.ckpt
+
+# 缓存与临时输出
+*.nrc
+*.hifi.npz
+/selftest_out/
+/dist/
+*.log
+
+# 编辑器
+.idea/
+.vscode/
+*.swp
+.DS_Store
