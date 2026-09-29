@@ -56,7 +56,28 @@ jobs:
         run: cargo clippy --all-targets -- -D warnings
 
       - name: Build (release)
-        run: cargo build --release --verbose
+        run: |
+          set -o pipefail
+          cargo build --release --verbose 2>&1 | tee build.log
+
+      # 失败时把构建日志尾部写进 annotations 并上传 artifact，便于离线排查
+      - name: Report build failure
+        if: failure()
+        run: |
+          grep -E 'error(\[|:)|error: linking|cannot find|undefined reference|note: ' \
+            build.log | tail -25 > errs.txt || true
+          while IFS= read -r line; do echo "::error::${line:0:480}"; done < errs.txt
+          tail -80 build.log > tail.txt
+          while IFS= read -r line; do echo "::notice::${line:0:400}"; done < tail.txt
+
+      - name: Upload build log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log-${{ matrix.os }}
+          path: |
+            build.log
+            errs.txt
 
       - name: Run unit tests
         run: cargo test --lib --verbose
