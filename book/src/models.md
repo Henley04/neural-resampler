@@ -28,11 +28,17 @@
 ```
 
 仓库中也有一份（`scripts/download_models.sh`）。脚本支持重试与断点续传，
+并在下载后做 **SHA-256 校验**（基线为与 v0.1.0 一起验证过的版本），
+文件损坏或被上游更换时会拒绝安装并给出提示。
+
 如果直连 GitHub 不畅，可用镜像前缀：
 
 ```bash
 NR_MODEL_MIRROR=https://ghfast.top/ ./download_models.sh
 ```
+
+> 上游模型更新导致校验不通过时，确认新版本可用后可用
+> `NR_MODEL_SKIP_CHECKSUM=1` 临时跳过校验——**请确认来源可信再这么做**。
 
 ## 手动获取
 

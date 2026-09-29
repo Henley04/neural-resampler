@@ -1,6 +1,6 @@
 [package]
 name = "neural-resampler"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 rust-version = "1.77"
 description = "通用神经重采样器引擎：纯 Rust + ONNX 重写的 HiFiSampler（FCPE F0 + PC-NSF-HiFiGAN 声码器）"
@@ -18,6 +18,9 @@ path = "src/main.rs"
 [lib]
 name = "neural_resampler"
 path = "src/lib.rs"
+# cdylib：产出可被外部语言 dlopen/加载的动态库（FFI 见 README）；
+# rlib：保留给测试与潜在的内联使用。
+crate-type = ["cdylib", "rlib"]
 
 [features]
 default = ["onnx"]
@@ -44,7 +47,11 @@ clap = { version = "4", features = ["derive"] }
 
 # ---- ONNX Runtime ----
 # download-binaries 会自动获取 ONNX Runtime 预编译库；tls-rustls 是下载所需的 TLS 后端。
-ort = { version = "2.0.0-rc.10", default-features = false, features = [
+# 版本用 `=` 精确锁定：ort 的 rc 预发布版本之间存在破坏性变更
+# （rc.10 的 semver 请求会解析到 rc.13，对应 ONNX Runtime 1.28.0）；
+# 以 load-dynamic 方式链接时，dylib 版本必须与 ort-sys 期望的精确匹配，
+# 否则渲染正常但进程退出阶段会 SIGSEGV。
+ort = { version = "=2.0.0-rc.13", default-features = false, features = [
     "download-binaries",
     "tls-rustls",
     "std",

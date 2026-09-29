@@ -266,28 +266,33 @@ fn cmd_batch(cli: &Cli, list: &Path, jobs: usize) -> Result<()> {
         bail!("清单为空: {list:?}");
     }
 
+    // 整个批量过程共享一个引擎：Engine 的推理会话由 Mutex 保护且整体
+    // Send+Sync，可安全地跨线程复用。之前每行都重建引擎，97MB 的 ONNX
+    // 模型被反复加载（每行多 ~80ms），多会话内部线程互相争抢还会让
+    // --jobs 的并行收益变成负数。
+    let engine = std::sync::Arc::new(build_engine(cli)?);
+
     if jobs > 1 {
         let pool = rayon::ThreadPoolBuilder::new().num_threads(jobs).build()?;
         pool.install(|| {
             lines
                 .par_iter()
-                .map(|args| render_one(cli, args))
+                .map(|args| render_one(&engine, args))
                 .collect::<Result<Vec<_>>>()
         })?;
     } else {
         for args in &lines {
-            render_one(cli, args)?;
+            render_one(&engine, args)?;
         }
     }
     println!("批量渲染完成：{} 条", lines.len());
     Ok(())
 }
 
-fn render_one(cli: &Cli, args: &[String]) -> Result<()> {
+fn render_one(engine: &Engine, args: &[String]) -> Result<()> {
     let adapter = UtauAdapter::new();
     let params = adapter.parse(args)?;
-    let engine = build_engine(cli)?;
-    let stats = adapter.render(&engine, &params)?;
+    let stats = adapter.render(engine, &params)?;
     println!(
         "{:?} → {:?}（{} 帧 / {:.1}ms）",
         params.input_file, params.output_file, stats.frames, stats.duration_ms

@@ -19,6 +19,7 @@
 | 声音破碎、有金属声 | `mel_layout` 判断错误 | 显式设 `vocoder.mel_layout: channels_first` 或 `frames_first` 试 |
 | 音高整体不对 | 音名格式 / F0 模式 | 确认音名如 `C4`；换 `f0.mode` 试（见 [F0 模式](f0-modes.md)） |
 | 编译报 ort 链接失败 | 同时启用了多个 GPU feature | **不要用 `--all-features`**，GPU feature 互斥 |
+| 进程退出时报 SIGSEGV（exit 139） | `load-dynamic` 链接时 dylib 版本不匹配 | 见下方 [load-dynamic 版本约束](#load-dynamic-版本约束) |
 | 每次渲染都很慢 | 缓存未命中 | 确认 `cache.enabled: true`；改配置会换指纹导致重建 |
 | macOS 提示「无法打开」 | 二进制未签名 | `xattr -d com.apple.quarantine ./resampler` |
 | UTAU 里没反应 | 路径含空格或中文 | 把程序放到纯英文无空格路径，如 `C:\nr\` |
@@ -70,6 +71,23 @@ selftest 通过但这里失败，问题在样本本身（格式、采样率、�
 ```bash
 ./resampler --log-format json render a.wav b.wav C4 2>&1 | grep '"level":"error"'
 ```
+
+## load-dynamic 版本约束
+
+默认分发产物把 ONNX Runtime **静态链接**进二进制，无此问题。
+但如果你以 `load-dynamic` 方式自行编译（运行时加载 `libonnxruntime.so` /
+`onnxruntime.dll`），有一个隐蔽的坑：
+
+**dylib 的版本必须与 ort-sys 构建时期望的版本精确一致**（如 1.28.0）。
+用相邻版本（如 1.19.2、1.22.0）时——渲染完全正常，但**进程退出阶段会
+SIGSEGV**（exit 139）：崩溃点在 `exit() → ld-linux 析构 → libonnxruntime`，
+gdb 栈回溯看起来像库卸载问题，实际是 ABI 不兼容导致的清理路径越界。
+
+排查方法：
+
+* 确认加载的库版本：`ldd resampler | grep onnxruntime` 后查该 so 的版本
+* 换成构建配置所对应的精确版本，或改用静态链接（默认分发模式）
+* CI 宿主若检查退出码，此问题会表现为「渲染成功但任务失败」
 
 ## 缓存相关
 

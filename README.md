@@ -213,6 +213,15 @@ if (!out) fprintf(stderr, "%s\n", nr_last_error());
 nr_string_free(out);
 ```
 
+`cargo build --release` 会同时产出动态库（`[lib] crate-type` 含 `cdylib`）：
+
+| 平台 | 产物 |
+| --- | --- |
+| Linux | `target/release/libneural_resampler.so` |
+| macOS | `target/release/libneural_resampler.dylib` |
+| Windows | `target/release/neural_resampler.dll` |
+
+需要静态库时，在 `[lib]` 的 `crate-type` 中追加 `"staticlib"` 即可。
 所有 FFI 入口都用 `catch_unwind` 包裹，panic 不会跨越 ABI 边界。
 
 ## 许可与致谢

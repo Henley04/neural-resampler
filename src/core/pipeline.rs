@@ -367,50 +367,29 @@ impl Engine {
         if scale > 0.0 && scale != 1.0 {
             buffer.scale(1.0 / scale);
         }
-        let new_max = buffer.peak();
 
-        // 响度归一化（P 标记控制强度）
-        if cfg.output.wave_norm {
-            let target = cfg.output.loudness_target;
-            let strength = req
-                .flags
+        // ---- 11. 定长 & 写出 ----
+        // 响度归一化（P 标记强度）、峰值限幅与音量缩放统一在 finalize 中执行
+        // 一次。此前这里先做一遍、finalize 里又全量做一遍：第二次归一化会
+        // 覆盖 P 的强度插值、把 V 的音量缩放抵消回目标响度。
+        let norm_strength = if cfg.output.wave_norm {
+            req.flags
                 .get("P")
                 .copied()
                 .flatten()
                 .map(|v| (v as f32 / 100.0).clamp(0.0, 1.0))
-                .unwrap_or(1.0);
-            if strength > 0.0 {
-                if strength < 1.0 {
-                    let original = buffer.samples.clone();
-                    crate::core::post_process::loudness_norm(
-                        &mut buffer.samples,
-                        sr,
-                        target,
-                        cfg.output.loudness_block_ms,
-                    );
-                    // 按强度在原始与归一化结果之间插值
-                    for (s, o) in buffer.samples.iter_mut().zip(original.iter()) {
-                        *s = o * (1.0 - strength) + *s * strength;
-                    }
-                } else {
-                    crate::core::post_process::loudness_norm(
-                        &mut buffer.samples,
-                        sr,
-                        target,
-                        cfg.output.loudness_block_ms,
-                    );
-                }
-            }
-        }
-
-        if new_max > cfg.output.peak_limit && new_max > 1e-9 {
-            buffer.scale(cfg.output.peak_limit / new_max);
-        }
-        buffer.scale((req.volume / 100.0) as f32);
-
-        // ---- 11. 定长 & 写出 ----
+                .unwrap_or(1.0)
+        } else {
+            0.0
+        };
         let target_samples = ((new_end - new_start) * sr as f64).round().max(1.0) as usize;
-        let final_buffer = finalize(buffer, &cfg.output, target_samples)?;
+        let final_buffer = finalize(
+            buffer,
+            &cfg.output,
+            target_samples,
+            norm_strength,
+            req.volume,
+        )?;
         write_wav(
             &req.output,
             &final_buffer.samples,
