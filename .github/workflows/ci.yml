@@ -57,7 +57,21 @@ jobs:
       # 此脚本自带 SHA-256 校验与重试，把问题提前暴露。
       - name: Fetch & verify ONNX Runtime static libs
         shell: bash
-        run: bash scripts/fetch_ort.sh
+        run: |
+          set -o pipefail
+          if command -v python3 >/dev/null 2>&1; then PY=python3; else PY=python; fi
+          "$PY" scripts/fetch_ort.py 2>&1 | tee fetch_ort.log
+
+      - name: Report fetch failure
+        if: failure()
+        shell: bash
+        run: |
+          if [ -f fetch_ort.log ]; then
+            tail -50 fetch_ort.log > fetch_tail.txt
+            while IFS= read -r line; do echo "::error::${line:0:400}"; done < fetch_tail.txt
+          else
+            echo "::error::预取脚本未能产生任何日志"
+          fi
 
       - name: Check formatting
         run: cargo fmt --all -- --check
@@ -78,6 +92,10 @@ jobs:
         if: failure()
         shell: bash
         run: |
+          if [ ! -f build.log ]; then
+            echo "::error::build.log 不存在（失败发生在构建步骤之前）"
+            exit 0
+          fi
           grep -E 'error(\[|:)|error: linking|cannot find|undefined reference|note: ' \
             build.log | tail -25 > errs.txt || true
           while IFS= read -r line; do echo "::error::${line:0:480}"; done < errs.txt

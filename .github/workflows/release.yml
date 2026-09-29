@@ -66,10 +66,24 @@ jobs:
           key: ort-static-${{ runner.os }}-${{ matrix.target }}-${{ hashFiles('Cargo.lock') }}
 
       # 预取 + SHA-256 校验 ONNX Runtime 静态库（ort-sys 下载失败时只打
-      # cargo::error 不中断，会在链接阶段才报 exit 101，见 scripts/fetch_ort.sh）
+      # cargo::error 不中断，会在链接阶段才报 exit 101，见 scripts/fetch_ort.py）
       - name: Fetch & verify ONNX Runtime static libs
         shell: bash
-        run: bash scripts/fetch_ort.sh
+        run: |
+          set -o pipefail
+          if command -v python3 >/dev/null 2>&1; then PY=python3; else PY=python; fi
+          "$PY" scripts/fetch_ort.py 2>&1 | tee fetch_ort.log
+
+      - name: Report fetch failure
+        if: failure()
+        shell: bash
+        run: |
+          if [ -f fetch_ort.log ]; then
+            tail -50 fetch_ort.log > fetch_tail.txt
+            while IFS= read -r line; do echo "::error::${line:0:400}"; done < fetch_tail.txt
+          else
+            echo "::error::预取脚本未能产生任何日志"
+          fi
 
       - name: Build (release)
         shell: bash
