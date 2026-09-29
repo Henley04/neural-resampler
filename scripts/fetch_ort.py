@@ -74,6 +74,15 @@ def fail(msg: str) -> "NoReturn":  # type: ignore[valid-type]
     sys.exit(1)
 
 
+def force_utf8_stdio() -> None:
+    """Windows 上 Python 的 stdout 默认是 cp1252，直接 print 中文会炸。"""
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError):
+            pass
+
+
 def sha256_of(path: Path) -> str:
     h = hashlib.sha256()
     with path.open("rb") as f:
@@ -102,22 +111,29 @@ def fetch(url: str, dst: Path, retries: int = 5) -> None:
 
 
 def decompress_lzma2(src: Path, dst: Path) -> None:
-    """解压裸 LZMA2 流（.tar.lzma2 不是 .xz 容器格式）。"""
-    dec = lzma.LZMADecompressor(format=lzma.FORMAT_RAW, filters=[{"id": lzma.FILTER_LZMA2}])
+    """解压裸 LZMA2 chunk 流（.tar.lzma2 不是 .xz 容器，流内无字典属性头）。
+
+    字典大小必须与压缩方声明一致，否则遇到超出字典的引用会报
+    Corrupt input data：ort-sys 的 build script 固定用 64 MiB
+    （build/main.rs: Lzma2Reader::new(reader, 1 << 26, None)），
+    这里保持同样参数。
+    """
+    dec = lzma.LZMADecompressor(
+        format=lzma.FORMAT_RAW,
+        filters=[{"id": lzma.FILTER_LZMA2, "dict_size": 1 << 26}],
+    )
     with src.open("rb") as fin, dst.open("wb") as fout:
-        while True:
+        while not dec.eof:
             chunk = fin.read(1 << 20)
             if not chunk:
                 break
             data = dec.decompress(chunk)
             if data:
                 fout.write(data)
-        try:  # 流带 end marker 时已到 eof，再 flush 会抛错
+        if not dec.eof:  # 流不带 end marker 时冲刷内部缓冲
             data = dec.decompress(b"")
             if data:
                 fout.write(data)
-        except (EOFError, lzma.LZMAError):
-            pass
 
 
 def extract_tar(tar_path: Path, stage: Path) -> None:
@@ -129,6 +145,7 @@ def extract_tar(tar_path: Path, stage: Path) -> None:
 
 
 def main() -> int:
+    force_utf8_stdio()
     runner_os = os.environ.get("RUNNER_OS", "")
     if runner_os not in DISTS:
         shown = runner_os or "<空>"

@@ -16,7 +16,9 @@ permissions:
 env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
-  # 统一 ort-sys 预编译库缓存位置，scripts/fetch_ort.sh 与 ort-sys build script 共用
+  # Windows runner 的 Python stdout 默认 cp1252，脚本含中文输出会炸
+  PYTHONUTF8: "1"
+  # 统一 ort-sys 预编译库缓存位置，scripts/fetch_ort.py 与 ort-sys build script 共用
   ORT_CACHE_DIR: ${{ github.workspace }}/.ort-cache
 
 jobs:
