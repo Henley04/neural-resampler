@@ -16,6 +16,8 @@ permissions:
 env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
+  # 统一 ort-sys 预编译库缓存位置，scripts/fetch_ort.sh 与 ort-sys build script 共用
+  ORT_CACHE_DIR: ${{ github.workspace }}/.ort-cache
 
 jobs:
   build:
@@ -57,13 +59,20 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-${{ matrix.target }}-cargo-
 
-      - name: Cache ONNX Runtime
+      - name: Cache ONNX Runtime static libs
         uses: actions/cache@v4
         with:
-          path: ~/.cache/ort
-          key: onnxruntime-${{ runner.os }}-${{ matrix.target }}-${{ hashFiles('Cargo.lock') }}
+          path: .ort-cache
+          key: ort-static-${{ runner.os }}-${{ matrix.target }}-${{ hashFiles('Cargo.lock') }}
+
+      # 预取 + SHA-256 校验 ONNX Runtime 静态库（ort-sys 下载失败时只打
+      # cargo::error 不中断，会在链接阶段才报 exit 101，见 scripts/fetch_ort.sh）
+      - name: Fetch & verify ONNX Runtime static libs
+        shell: bash
+        run: bash scripts/fetch_ort.sh
 
       - name: Build (release)
+        shell: bash
         run: cargo build --release --target ${{ matrix.target }}
 
       # 打包：二进制 + 默认配置 + 模型下载脚本 + 文档。

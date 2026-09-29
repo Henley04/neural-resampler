@@ -11,6 +11,10 @@ on:
 env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
+  # 统一 ort-sys 预编译库缓存位置（覆盖默认的 ~/.cache/ort.pyke.io /
+  # ~/Library/Caches/ort.pyke.io / %LOCALAPPDATA%\ort.pyke.io 平台差异），
+  # scripts/fetch_ort.sh 与 ort-sys build script 共用。
+  ORT_CACHE_DIR: ${{ github.workspace }}/.ort-cache
 
 jobs:
   build-and-test:
@@ -41,11 +45,19 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-
 
-      - name: Cache ONNX Runtime
+      - name: Cache ONNX Runtime static libs
         uses: actions/cache@v4
         with:
-          path: ~/.cache/ort
-          key: onnxruntime-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
+          path: .ort-cache
+          key: ort-static-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
+
+      # 必须在 fmt/clippy 之前：clippy 也会触发 ort-sys build script 下载。
+      # ort-sys 下载失败时只打印 cargo::error 不中断、留下空缓存目录，
+      # 最终在 rustc 链接阶段才报 "could not find native static library"。
+      # 此脚本自带 SHA-256 校验与重试，把问题提前暴露。
+      - name: Fetch & verify ONNX Runtime static libs
+        shell: bash
+        run: bash scripts/fetch_ort.sh
 
       - name: Check formatting
         run: cargo fmt --all -- --check
@@ -56,6 +68,7 @@ jobs:
         run: cargo clippy --all-targets -- -D warnings
 
       - name: Build (release)
+        shell: bash
         run: |
           set -o pipefail
           cargo build --release --verbose 2>&1 | tee build.log
@@ -63,6 +76,7 @@ jobs:
       # 失败时把构建日志尾部写进 annotations 并上传 artifact，便于离线排查
       - name: Report build failure
         if: failure()
+        shell: bash
         run: |
           grep -E 'error(\[|:)|error: linking|cannot find|undefined reference|note: ' \
             build.log | tail -25 > errs.txt || true
