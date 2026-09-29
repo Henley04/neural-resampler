@@ -89,7 +89,43 @@ jobs:
 
       - name: Build (release)
         shell: bash
-        run: cargo build --release --target ${{ matrix.target }}
+        run: |
+          set -o pipefail
+          cargo build --release --verbose --target ${{ matrix.target }} 2>&1 | tee build.log
+
+      # 诊断逻辑与 ci.yml 相同：先去 ANSI 色码再宽模式匹配
+      - name: Report build failure
+        if: failure()
+        shell: bash
+        run: |
+          if [ ! -f build.log ]; then
+            echo "::error::build.log 不存在（失败发生在构建步骤之前）"
+            exit 0
+          fi
+          if command -v python3 >/dev/null 2>&1; then PY=python3; else PY=python; fi
+          "$PY" -c "import re,sys; sys.stdout.write(re.sub(r'\x1b\[[0-9;]*m','',open('build.log',encoding='utf-8',errors='replace').read()))" > build_plain.log
+          find .ort-cache -type f 2>/dev/null | head -20 > ort_cache.txt
+          grep -nE 'error(\[|:)|failed to|could not|undefined reference|cannot find' \
+            build_plain.log | tail -25 > errs.txt || true
+          grep -A20 -m1 'warning: build failed' build_plain.log | tail -20 > ctx.txt || true
+          {
+            echo "## 构建失败诊断（${{ matrix.asset }}）"
+            echo "### ort-cache 文件清单"
+            '```'
+            cat ort_cache.txt
+            '```'
+            echo "### 匹配到的错误行"
+            '```'
+            cat errs.txt
+            '```'
+            echo "### build failed 上下文"
+            '```'
+            cat ctx.txt
+            '```'
+          } >> "$GITHUB_STEP_SUMMARY" || true
+          while IFS= read -r line; do echo "::error::${line:0:400}"; done < errs.txt
+          while IFS= read -r line; do echo "::notice::[ort-cache] ${line:0:380}"; done < ort_cache.txt
+          while IFS= read -r line; do echo "::notice::[ctx] ${line:0:380}"; done < ctx.txt
 
       # 打包：二进制 + 默认配置 + 模型下载脚本 + 文档。
       # 不含 ONNX 模型本身（体积大且受各自许可约束），解压后跑 download_models.sh 获取。
