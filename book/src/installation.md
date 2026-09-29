@@ -8,8 +8,10 @@
 | --- | --- |
 | Linux x86_64 | `neural-resampler-<ver>-linux-x86_64.tar.gz` |
 | macOS Apple Silicon | `neural-resampler-<ver>-macos-aarch64.tar.gz` |
-| macOS Intel | `neural-resampler-<ver>-macos-x86_64.tar.gz` |
 | Windows x86_64 | `neural-resampler-<ver>-windows-x86_64.zip` |
+
+暂不提供预编译产物的平台（macOS Intel、Linux ARM64 等）请自行
+`cargo build --release`，产物在 `target/release/resampler`。
 
 每个压缩包附带同名 `.sha256` 校验文件，下载后可核对：
 

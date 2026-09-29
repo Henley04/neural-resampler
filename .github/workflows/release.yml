@@ -31,10 +31,9 @@ jobs:
           - os: macos-latest
             target: aarch64-apple-darwin
             asset: macos-aarch64
-          # macOS Intel。macos-13 镜像已逐步弃用、排队极久，改用 macos-15-intel。
-          - os: macos-15-intel
-            target: x86_64-apple-darwin
-            asset: macos-x86_64
+          # macOS Intel 暂不提供预编译产物：
+          # macos-13 镜像已弃用（排队 20min 不启动），macos-15-intel 上构建失败。
+          # Intel Mac 用户请自行 cargo build --release。
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             asset: windows-x86_64
@@ -183,11 +182,12 @@ jobs:
           | --- | --- |
           | `neural-resampler-<ver>-linux-x86_64.tar.gz` | Linux x86_64 |
           | `neural-resampler-<ver>-macos-aarch64.tar.gz` | macOS Apple Silicon |
-          | `neural-resampler-<ver>-macos-x86_64.tar.gz` | macOS Intel |
           | `neural-resampler-<ver>-windows-x86_64.zip` | Windows x86_64 |
 
           每个压缩包附带 `.sha256` 校验文件。
-          其他平台（如 Linux ARM64）请自行 `cargo build --release`。
+
+          未提供预编译产物的平台请自行 `cargo build --release`：
+          macOS Intel（Runner 镜像限制）、Linux ARM64、其他架构。
 
           ### 用法
 

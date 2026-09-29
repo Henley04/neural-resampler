@@ -1,6 +1,11 @@
 name: Docs (GitHub Pages)
 
-# 文档站源码在 book/（mdBook）。推送到默认分支即自动构建部署。
+# 文档站源码在 book/（mdBook）。推送到默认分支即构建并发布到 gh-pages 分支，
+# GitHub Pages 以「分支部署」方式自动发布该分支内容。
+#
+# 注意：本仓库的 Pages 是 deploy-from-branch 模式（build_type: legacy）。
+# 若之后在 Settings → Pages 里改成 GitHub Actions 模式，可改用
+# actions/configure-pages + upload-pages-artifact + deploy-pages 组合。
 on:
   push:
     branches: [main, master]
@@ -9,13 +14,9 @@ on:
       - '.github/workflows/pages.yml'
   workflow_dispatch:
 
-# 部署 Pages 所需的最小权限
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
-# 只允许一个并发部署；不取消进行中的部署，避免发布中断
 concurrency:
   group: pages
   cancel-in-progress: false
@@ -24,7 +25,7 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
+  build-deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -47,22 +48,29 @@ jobs:
       - name: Build book
         run: mdbook build book
 
-      - name: Setup Pages
-        id: pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: book/book
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      # 以孤儿提交推送到 gh-pages 分支，保持该分支只有构建产物、无历史包袱。
+      - name: Publish to gh-pages branch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          cd book/book
+          touch .nojekyll
+          rm -rf .git
+          git init -q
+          git add -A
+          git -c user.email="github-actions[bot]@users.noreply.github.com" \
+              -c user.name="github-actions[bot]" \
+              commit -q -m "docs: 更新文档站（${GITHUB_SHA::8}）"
+          for i in 1 2 3; do
+            if git push --force \
+              "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" \
+              HEAD:gh-pages; then
+              echo "已发布到 gh-pages"
+              exit 0
+            fi
+            echo "推送失败，重试 $i"
+            sleep 5
+          done
+          echo "::error::gh-pages 推送失败"
+          exit 1
