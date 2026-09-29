@@ -57,9 +57,11 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             target
-          key: ${{ runner.os }}-${{ matrix.target }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          # v2：作废旧缓存（理由见 ci.yml——ort-sys build script 输出被缓存后
+          # 不会因新增 ORT_CACHE_DIR 而刷新）
+          key: v2-${{ runner.os }}-${{ matrix.target }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            ${{ runner.os }}-${{ matrix.target }}-cargo-
+            v2-${{ runner.os }}-${{ matrix.target }}-cargo-
 
       - name: Cache ONNX Runtime static libs
         uses: actions/cache@v4
@@ -86,6 +88,11 @@ jobs:
           else
             echo "::error::预取脚本未能产生任何日志"
           fi
+
+      # 强制 ort-sys build script 重跑以拾取 ORT_CACHE_DIR（双保险）
+      - name: Refresh ort-sys build script cache
+        shell: bash
+        run: cargo clean -p ort-sys --target ${{ matrix.target }}
 
       - name: Build (release)
         shell: bash

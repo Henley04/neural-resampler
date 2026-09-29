@@ -43,9 +43,12 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          # v2：作废旧缓存——ort-sys 的 build script 不声明 rerun-if-env-changed，
+          # 旧 target 缓存里缓存的 -L 路径（~/.cache/ort.pyke.io）不会因新增
+          # ORT_CACHE_DIR 而刷新，导致 rustc 拿旧路径找不到预取的静态库
+          key: v2-${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            ${{ runner.os }}-cargo-
+            v2-${{ runner.os }}-cargo-
 
       - name: Cache ONNX Runtime static libs
         uses: actions/cache@v4
@@ -77,6 +80,11 @@ jobs:
 
       - name: Check formatting
         run: cargo fmt --all -- --check
+
+      # 双保险：清掉 ort-sys 的 build script 输出缓存，强制重跑以拾取
+      # ORT_CACHE_DIR（build script 未声明 rerun-if-env-changed 时不重跑）
+      - name: Refresh ort-sys build script cache
+        run: cargo clean -p ort-sys
 
       # 注意：不能用 --all-features。GPU 提供者（cuda / directml / coreml）互斥，
       # ort 无法为组合后的 feature set 找到预编译库，会链接失败。
