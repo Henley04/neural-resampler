@@ -4,6 +4,10 @@
 
 通用神经重采样器引擎 —— 用 **纯 Rust + ONNX** 重写的 HiFiSampler。
 
+> 📖 **使用文档**：<https://henley04.github.io/neural-resampler/>
+> 📦 **下载预编译产物**：[Releases](https://github.com/Henley04/neural-resampler/releases)
+> （Linux x86_64 / macOS Apple Silicon / Windows x86_64）
+
 传统声库的 WAV 与 `oto.ini` **完全不动**，只替换负责音高变换、时长调整和音色合成的 resampler 引擎：
 
 * 声码器沿用 **PC-NSF-HiFiGAN**（NSF 架构，F0 条件化，直接改 F0 即可精确变调）；
