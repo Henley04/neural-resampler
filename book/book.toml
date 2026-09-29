@@ -1,0 +1,19 @@
+[book]
+title = "neural-resampler 使用文档"
+authors = ["neural-resampler"]
+description = "通用神经重采样器引擎使用文档：纯 Rust + ONNX 重写的 HiFiSampler"
+language = "zh"
+src = "src"
+
+[output.html]
+default-theme = "rust"
+preferred-dark-theme = "coal"
+git-repository-url = "https://github.com/Henley04/neural-resampler"
+edit-url-template = "https://github.com/Henley04/neural-resampler/edit/master/book/{path}"
+
+[output.html.fold]
+enable = true
+level = 1
+
+[output.html.search]
+enable = true

@@ -17,6 +17,9 @@
 /dist/
 *.log
 
+# mdBook 构建输出（源码在 book/src，站点由 CI 生成）
+/book/book/
+
 # 编辑器
 .idea/
 .vscode/

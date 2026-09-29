@@ -1,0 +1,213 @@
+name: Release
+
+# 打 tag 触发发布，也可手动从 Actions 面板触发。
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: '要发布的 tag（必须已存在）'
+        required: true
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  build:
+    name: Build ${{ matrix.asset }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            asset: linux-x86_64
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            asset: macos-aarch64
+          - os: macos-13
+            target: x86_64-apple-darwin
+            asset: macos-x86_64
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            asset: windows-x86_64
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Cache Cargo dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-${{ matrix.target }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.target }}-cargo-
+
+      - name: Cache ONNX Runtime
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ort
+          key: onnxruntime-${{ runner.os }}-${{ matrix.target }}-${{ hashFiles('Cargo.lock') }}
+
+      - name: Build (release)
+        run: cargo build --release --target ${{ matrix.target }}
+
+      # 打包：二进制 + 默认配置 + 模型下载脚本 + 文档。
+      # 不含 ONNX 模型本身（体积大且受各自许可约束），解压后跑 download_models.sh 获取。
+      - name: Package (tar.gz)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]] && VERSION="${{ inputs.tag }}"
+          VERSION="${VERSION#v}"
+          NAME="neural-resampler-${VERSION}-${{ matrix.asset }}"
+          DIST="dist/${NAME}"
+          mkdir -p "$DIST"
+          cp "target/${{ matrix.target }}/release/resampler" "$DIST/"
+          cp config/resampler.yaml "$DIST/config.resampler.yaml"
+          cp scripts/download_models.sh "$DIST/download_models.sh"
+          chmod +x "$DIST/download_models.sh"
+          cp README.md LICENSE "$DIST/"
+          cp -r docs "$DIST/" 2>/dev/null || true
+          mkdir -p "$DIST/models"
+          cp models/README.md "$DIST/models/" 2>/dev/null || true
+          (cd dist && tar czf "${NAME}.tar.gz" "$NAME")
+          (cd dist && shasum -a 256 "${NAME}.tar.gz" > "${NAME}.tar.gz.sha256" 2>/dev/null \
+            || sha256sum "${NAME}.tar.gz" > "${NAME}.tar.gz.sha256")
+          echo "已打包 ${NAME}.tar.gz"
+          ls -lh dist/
+
+      - name: Package (zip)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]] && VERSION="${{ inputs.tag }}"
+          VERSION="${VERSION#v}"
+          NAME="neural-resampler-${VERSION}-${{ matrix.asset }}"
+          DIST="dist/${NAME}"
+          mkdir -p "$DIST"
+          cp "target/${{ matrix.target }}/release/resampler.exe" "$DIST/"
+          cp config/resampler.yaml "$DIST/config.resampler.yaml"
+          cp scripts/download_models.sh "$DIST/download_models.sh"
+          cp README.md LICENSE "$DIST/"
+          cp -r docs "$DIST/" 2>/dev/null || true
+          mkdir -p "$DIST/models"
+          cp models/README.md "$DIST/models/" 2>/dev/null || true
+          echo "已打包 ${NAME}.zip"
+          ls -lh dist/
+
+      - name: Compress to zip (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $VERSION = "${{ github.ref_name }}" -replace '^v',''
+          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
+            $VERSION = "${{ inputs.tag }}" -replace '^v',''
+          }
+          $NAME = "neural-resampler-$VERSION-${{ matrix.asset }}"
+          Compress-Archive -Path "dist/$NAME" -DestinationPath "dist/$NAME.zip"
+          $hash = (Get-FileHash -Algorithm SHA256 "dist/$NAME.zip").Hash.ToLower()
+          "$hash  $NAME.zip" | Out-File -Encoding ascii "dist/$NAME.zip.sha256"
+          Get-ChildItem dist
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset }}
+          path: |
+            dist/*.tar.gz
+            dist/*.zip
+            dist/*.sha256
+          if-no-files-found: error
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Create release and upload assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME}"
+          [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]] && TAG="${{ inputs.tag }}"
+          echo "发布 tag: $TAG"
+          ls -lh dist/
+
+          cat > notes.md <<'NOTES'
+          ## neural-resampler
+
+          通用神经重采样器引擎 —— 纯 Rust + ONNX 重写的 HiFiSampler。
+          声库的 WAV 与 `oto.ini` 完全不动，只替换 resampler 引擎。
+
+          ### 安装
+
+          1. 下载下面对应平台的压缩包并解压
+          2. 解压后运行 `./download_models.sh`（Windows 可用 Git Bash）获取 ONNX 模型
+          3. 把 `resampler` 填进编辑器的 resampler 路径即可
+
+          > **产物不含 ONNX 模型**。模型体积大（约 100 MB）且受各自来源许可约束，
+          > 不随仓库分发，请用包内附带的 `download_models.sh` 获取。
+
+          ### 各平台产物
+
+          | 文件 | 平台 |
+          | --- | --- |
+          | `neural-resampler-<ver>-linux-x86_64.tar.gz` | Linux x86_64 |
+          | `neural-resampler-<ver>-macos-aarch64.tar.gz` | macOS Apple Silicon |
+          | `neural-resampler-<ver>-macos-x86_64.tar.gz` | macOS Intel |
+          | `neural-resampler-<ver>-windows-x86_64.zip` | Windows x86_64 |
+
+          每个压缩包附带 `.sha256` 校验文件。
+          其他平台（如 Linux ARM64）请自行 `cargo build --release`。
+
+          ### 用法
+
+          完整文档：**https://henley04.github.io/neural-resampler/**
+
+          最快验证：
+
+          ```bash
+          ./resampler selftest          # 生成测试音并跑通整条管线
+          ./resampler info              # 查看模型与后端状态
+          ```
+
+          作为 UTAU resampler 按协议直接传参：
+
+          ```bash
+          resampler in.wav out.wav C4 100 "" 0 500 60 -50 100 0 !120 AA
+          ```
+
+          没有模型时会自动降级（声码器 → Stub、F0 → 内置 DSP），管线仍可跑通，
+          但**音质不可用**，仅用于连通性验证。
+          NOTES
+
+          gh release create "$TAG" --title "$TAG" --notes-file notes.md --verify-tag
+          gh release upload "$TAG" dist/*.tar.gz dist/*.zip dist/*.sha256 --clobber
