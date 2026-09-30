@@ -1,24 +1,32 @@
 # 在 OpenUtau 中使用
 
-OpenUtau 的 resampler 机制比原生 UTAU 更灵活，直接指向二进制即可。
+OpenUtau 通过 `Resamplers` 目录管理第三方 resampler。它按标准 resampler 协议
+传入 13 个参数，与[原生 UTAU](utau.md) 完全一致，无需额外配置参数模板。
 
 ## 配置步骤
 
-1. 打开 OpenUtau → `Tools` → `Options`（工具 → 选项）
-2. 找到 `Resampler` 一项
-3. 选择 **`Custom`**（自定义）
-4. 在可执行文件路径处填入 `resampler`（Windows 为 `resampler.exe`）的完整路径
-5. 保存，重新渲染工程
+依据 [OpenUtau 官方 wiki](https://github.com/openutau/OpenUtau/wiki/Resamplers-and-Wavtools)：
 
-OpenUtau 会按标准 resampler 协议传入 13 个参数，与[原生 UTAU](utau.md) 完全一致，
-无需额外配置参数模板。
+1. 把 `resampler`（Windows 为 `resampler.exe`）放进 OpenUtau 的 `Resamplers` 文件夹：
+   * Windows：OpenUtau 程序目录下的 `Resamplers`
+   * Linux：`~/.local/share/OpenUtau/Resamplers`
+   * 也可把可执行文件直接拖到 OpenUtau 主窗口，选 **"Install as resampler"**（0.1.119+）
+2. 把渲染器切到 **`CLASSIC`**
+3. 点击渲染器旁的 **⚙ 齿轮图标**，在 Resampler 下拉中选择本 resampler
+4. 重新渲染工程
+
+> 可选：在 `Resamplers` 目录放一个与可执行文件同名的 `.yaml`
+> （如 `resampler.yaml`）作为 Resampler Manifest，向 OpenUtau 声明本引擎支持的
+> flags（expressions），表达式面板会据此显示建议值与范围。
 
 ## 路径注意事项
 
-* Windows 路径含空格时建议用短路径或把程序放在无空格目录，例如 `C:\nr\resampler.exe`
+* 放进 `Resamplers` 目录（或拖放安装）后，路径由 OpenUtau 管理，无需手动指定
 * macOS / Linux 上确保二进制有执行权限：`chmod +x resampler`
 * macOS 首次运行若被 Gatekeeper 拦截（二进制非签名），需在「系统设置 → 隐私与安全性」中允许，
   或执行：`xattr -d com.apple.quarantine ./resampler`
+* 在 macOS / Linux 上运行 Windows 版 resampler 需配置 Wine
+  （`Tools > Preferences > Advanced > Wine Path`）；本仓库提供原生 macOS/Linux 产物，无需 Wine
 
 ## 验证配置是否生效
 

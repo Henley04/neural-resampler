@@ -57,7 +57,10 @@ resampler in.wav out.wav C4 100 "" 0 500 60 -50 100 0 !120 AA
 #        ↑输入  ↑输出   ↑音名 ↑力度 ↑flags ↑offset ↑length ↑consonant ↑cutoff ↑volume ↑modulation ↑tempo ↑pitchBend
 ```
 
-在 OpenUtau 中：`Tools → Options → Resampler` 选择 `Custom`，可执行文件指向本二进制即可。
+在 OpenUtau 中：把二进制放进 OpenUtau 目录的 `Resamplers` 文件夹（或直接拖到
+OpenUtau 窗口选 "Install as resampler"），渲染器切到 `CLASSIC` 后点击旁边的
+⚙ 齿轮图标选择本 resampler。详见 OpenUtau wiki 的
+[Resamplers and Wavtools](https://github.com/openutau/OpenUtau/wiki/Resamplers-and-Wavtools)。
 
 没有模型时引擎会自动降级（声码器 → 内置 Stub，F0 → 内置 DSP），管线仍然可跑通，
 但**音质不可用**，仅用于连通性验证。

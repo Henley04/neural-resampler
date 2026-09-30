@@ -29,8 +29,11 @@ resampler <in.wav> <out.wav> <pitch> <velocity> <flags> <offset> <length_req>
 
 ## 在 OpenUtau 中配置
 
-`Tools → Options → Resampler` 选 `Custom`，可执行文件指向 `resampler`。
-声库的 `oto.ini` 与 WAV 完全不用改动。
+把 `resampler`（Windows 为 `resampler.exe`）放进 OpenUtau 的 `Resamplers` 目录
+（Windows 为程序目录下；Linux 为 `~/.local/share/OpenUtau/Resamplers`；或拖入
+OpenUtau 窗口选 "Install as resampler"），渲染器切到 `CLASSIC` 后点旁边的
+⚙ 齿轮选择它。声库的 `oto.ini` 与 WAV 完全不用改动。
+参见 [OpenUtau wiki: Resamplers and Wavtools](https://github.com/openutau/OpenUtau/wiki/Resamplers-and-Wavtools)。
 
 ## 支持的 flags
 
