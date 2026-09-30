@@ -27,14 +27,16 @@ shasum -a 256 -c neural-resampler-0.1.0-linux-x86_64.tar.gz.sha256
 neural-resampler-0.1.0-linux-x86_64/
 ├── resampler              # 主程序（Windows 为 resampler.exe）
 ├── config.resampler.yaml  # 默认配置，可直接改后用 --config 指定
-├── download_models.sh     # 模型下载脚本
+├── download_models.sh     # 模型下载脚本（Linux/macOS）
+├── download_models.ps1    # 模型下载脚本（Windows PowerShell）
 ├── models/                # 模型放置目录（初始为空）
 ├── docs/                  # 架构与模型说明
 └── README.md LICENSE
 ```
 
 > **产物不含 ONNX 模型。** 模型体积约 100 MB，且受各自来源许可约束，不随仓库分发。
-> 解压后请运行 `./download_models.sh` 获取，详见[获取模型](models.md)。
+> 解压后请运行 `./download_models.sh`（Windows 为 `.\download_models.ps1`）获取，
+> 详见[获取模型](models.md)。
 
 ## 方式二：从源码构建
 

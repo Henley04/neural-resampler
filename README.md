@@ -38,7 +38,8 @@
 cargo build --release
 
 # 2. 准备模型（见 models/README.md）
-bash scripts/download_models.sh          # 或手动把 ONNX 放进 models/
+bash scripts/download_models.sh          # Windows: scripts/download_models.ps1
+                                         # 或手动把 ONNX 放进 models/
 
 # 3. 自检：生成测试音并跑通整条管线
 ./target/release/resampler selftest
@@ -176,8 +177,9 @@ neural-resampler-x86_64-unknown-linux-gnu/
 └── docs/ README.md LICENSE
 ```
 
-模型未放入仓库，CI 与空白环境请用 `scripts/download_models.sh` 获取
-（可用 `NR_MODEL_MIRROR` 指定镜像前缀，脚本支持重试与断点续传）。
+模型未放入仓库，CI 与空白环境请用 `scripts/download_models.sh`
+（Windows: `scripts/download_models.ps1`）获取。脚本在 GitHub 直连不可达
+或低于 100KB/s 时自动走 gh-proxy 镜像（可用 `NR_MODEL_MIRROR` 强制指定），下载后做 SHA-256 校验。
 
 ## 测试与 CI
 

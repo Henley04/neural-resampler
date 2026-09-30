@@ -151,6 +151,7 @@ jobs:
           cp config/resampler.yaml "$DIST/config.resampler.yaml"
           cp scripts/download_models.sh "$DIST/download_models.sh"
           chmod +x "$DIST/download_models.sh"
+          cp scripts/download_models.ps1 "$DIST/download_models.ps1"
           cp README.md LICENSE "$DIST/"
           cp -r docs "$DIST/" 2>/dev/null || true
           mkdir -p "$DIST/models"
@@ -175,6 +176,7 @@ jobs:
           cp "target/${{ matrix.target }}/release/resampler.exe" "$DIST/"
           cp config/resampler.yaml "$DIST/config.resampler.yaml"
           cp scripts/download_models.sh "$DIST/download_models.sh"
+          cp scripts/download_models.ps1 "$DIST/download_models.ps1"
           cp README.md LICENSE "$DIST/"
           cp -r docs "$DIST/" 2>/dev/null || true
           mkdir -p "$DIST/models"
@@ -238,11 +240,11 @@ jobs:
           ### 安装
 
           1. 下载下面对应平台的压缩包并解压
-          2. 解压后运行 `./download_models.sh`（Windows 可用 Git Bash）获取 ONNX 模型
+          2. 解压后运行 `./download_models.sh`（Windows: `powershell -ExecutionPolicy Bypass -File .\download_models.ps1`）获取 ONNX 模型——脚本会在 GitHub 直连不可用或过慢时自动走 gh-proxy 镜像
           3. 把 `resampler` 填进编辑器的 resampler 路径即可
 
           > **产物不含 ONNX 模型**。模型体积大（约 100 MB）且受各自来源许可约束，
-          > 不随仓库分发，请用包内附带的 `download_models.sh` 获取。
+          > 不随仓库分发，请用包内附带的 `download_models.sh` / `download_models.ps1` 获取。
 
           ### 各平台产物
 

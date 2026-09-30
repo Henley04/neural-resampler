@@ -21,24 +21,40 @@
 
 ## 一键下载
 
-发布产物里附带了下载脚本：
+发布产物里附带了下载脚本（bash 与 PowerShell 各一份，逻辑相同）：
 
 ```bash
-./download_models.sh
+./download_models.sh      # Linux / macOS / Git Bash
 ```
 
-仓库中也有一份（`scripts/download_models.sh`）。脚本支持重试与断点续传，
-并在下载后做 **SHA-256 校验**（基线为与 v0.1.0 一起验证过的版本），
+```powershell
+powershell -ExecutionPolicy Bypass -File .\download_models.ps1    # Windows PowerShell
+```
+
+仓库中也有一份（`scripts/download_models.sh` 与 `scripts/download_models.ps1`）。
+脚本支持自动重试，并在下载后做 **SHA-256 校验**（基线为与 v0.1.0 一起验证过的版本），
 文件损坏或被上游更换时会拒绝安装并给出提示。
 
-如果直连 GitHub 不畅，可用镜像前缀：
+### 下载源与镜像加速
 
-```bash
-NR_MODEL_MIRROR=https://ghfast.top/ ./download_models.sh
-```
+脚本默认直连 GitHub（`raw.githubusercontent.com`），并内置 gh-proxy 镜像加速：
+
+1. **自动探测**：GitHub 直连不可达时，自动切换镜像并提示
+2. **慢速切换**：下载平均速度低于 100KB/s 持续 10 秒时，若当前是直连会
+   询问是否切换镜像（`NR_MODEL_AUTO_SWITCH=1` 可免询问自动切换）；
+   直连重试耗尽后也会自动用镜像做最后一轮
+3. **强制镜像**：设置 `NR_MODEL_MIRROR` 直接使用指定镜像前缀
+   （[gh-proxy](https://github.com/hunshcn/gh-proxy) 格式：前缀 + 完整原始 URL）：
+
+   ```bash
+   NR_MODEL_MIRROR=https://ghfast.top/ ./download_models.sh
+   ```
+
+   也可换成任意自部署或其他 gh-proxy 实例。
 
 > 上游模型更新导致校验不通过时，确认新版本可用后可用
-> `NR_MODEL_SKIP_CHECKSUM=1` 临时跳过校验——**请确认来源可信再这么做**。
+> `NR_MODEL_SKIP_CHECKSUM=1` 临时跳过校验——**请确认来源可信再这么做**
+> （镜像内容被篡改也会被校验拦下）。
 
 ## 手动获取
 

@@ -10,7 +10,8 @@
 
 | 症状 | 可能原因 | 处理 |
 | --- | --- | --- |
-| `info` 里模型显示 `[缺失]` | 模型没放到 `models/` | 跑 `./download_models.sh`，或用 `--models` 指向实际目录 |
+| `info` 里模型显示 `[缺失]` | 模型没放到 `models/` | 跑 `./download_models.sh`（Windows: `.\download_models.ps1`），或用 `--models` 指向实际目录 |
+| 下载模型很慢或失败 | GitHub 直连不畅 | 脚本会自动切 gh-proxy 镜像；也可 `NR_MODEL_MIRROR=https://ghfast.top/` 强制走镜像 |
 | 声码器后端是 `stub` | 同上 | 同上。**Stub 只用于连通性验证，音质不可用** |
 | F0 后端是 `world-dio` | `fcpe.onnx` 缺失 | 功能正常，只是歌声场景略不稳；想用 FCPE 就补模型 |
 | 输出长度明显不对 | `length` 单位是**毫秒** | 想要 1 秒就传 `1000`，不是 `44100` |

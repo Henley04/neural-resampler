@@ -7,7 +7,8 @@
 ### 为什么发布包里没有模型？
 
 两个原因：模型合计约 100 MB；而且它们的许可不一定允许再分发。
-所以模型由使用者自行获取，发布包里附带了 `download_models.sh`。
+所以模型由使用者自行获取，发布包里附带了 `download_models.sh`
+（Windows 为 `download_models.ps1`）。
 
 ### 没有模型能跑吗？
 

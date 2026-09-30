@@ -13,9 +13,11 @@
 ```bash
 bash scripts/download_models.sh          # 下载到 ./models
 bash scripts/download_models.sh /path/to/dir
+powershell -ExecutionPolicy Bypass -File scripts/download_models.ps1   # Windows
 ```
 
-脚本只做下载与校验，不做转换。
+脚本只做下载与校验，不做转换。GitHub 直连不可达或低于 100KB/s 时会自动
+切换 gh-proxy 镜像（`NR_MODEL_MIRROR=镜像前缀` 可强制指定）。
 
 ## 手动准备
 

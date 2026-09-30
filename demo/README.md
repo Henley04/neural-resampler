@@ -14,7 +14,7 @@
 
 ```bash
 cargo build --release
-bash scripts/download_models.sh            # 下载 ONNX 到 models/
+bash scripts/download_models.sh            # 下载 ONNX 到 models/（Windows 用 scripts/download_models.ps1）
 ./target/release/resampler demo/input_a3.wav /tmp/c4.wav C4 100 "" 0 800 0 -30 100 0 '!120' AA
 ```
 
