@@ -17,6 +17,9 @@
 #   4. 切换下载源后从头下载（gh-proxy 不保证 Range 续传）
 #   5. 无论来源如何，下载完成后都做 SHA-256 校验——镜像内容被篡改会被拦下
 #
+# 提示语言：NR_MODEL_LANG=zh|ja|en|all 可强制指定；否则按系统 UI 语言
+# 选择简体中文 / 日本語 / English；检测不到或系统语言不属于三者时，三语同时显示。
+#
 # 模型来源于第三方仓库，许可遵循各自发布页要求。
 
 param([string]$DestDir)
@@ -61,6 +64,140 @@ $Script:Base = ''                # 下载前缀：'' = GitHub 直连；非空 = 
 $Script:UsingMirror = 0
 $Script:MirrorAlreadyUsed = 0
 
+# ---- 提示语言：NR_MODEL_LANG > 系统 UI 语言 > 三语同显 ----
+function Detect-Lang {
+    switch ($env:NR_MODEL_LANG) {
+        { $_ -in @('zh', 'ja', 'en', 'all') } { return $_ }
+    }
+    $l = ''
+    try { $l = [System.Globalization.CultureInfo]::CurrentUICulture.TwoLetterISOLanguageName } catch {}
+    switch ($l) {
+        'zh' { return 'zh' }
+        'ja' { return 'ja' }
+        'en' { return 'en' }
+    }
+    return 'all'    # 检测不到或非三语 → 三语同时显示
+}
+$Script:UILang = Detect-Lang
+
+# Get-Msg <key> [args]：按 UILang 返回提示文本。
+# all 模式下每条消息按 English -> 日本語 -> 简体中文 各占一行。
+function Get-Msg {
+    param([string]$Key, [object[]]$A = @())
+    $en = ''; $ja = ''; $zh = ''
+    switch ($Key) {
+        'lang_mode' {
+            if ($Script:UILang -eq 'all') {
+                $en = "Trilingual mode: system language is not one of English / 日本語 / 简体中文 (set NR_MODEL_LANG=zh|ja|en|all to override)"
+                $ja = "三言語表示モード: システム言語が English / 日本語 / 簡体字中国語 のいずれにも一致しません（NR_MODEL_LANG=zh|ja|en|all で変更可）"
+                $zh = "三语同时显示：未检测到系统语言为三者之一（可设 NR_MODEL_LANG=zh|ja|en|all 覆盖）"
+            } else {
+                $en = "Language: English (set NR_MODEL_LANG=zh|ja|en|all to override)"
+                $ja = "言語: 日本語（NR_MODEL_LANG=zh|ja|en|all で変更可）"
+                $zh = "语言：简体中文（可设 NR_MODEL_LANG=zh|ja|en|all 覆盖）"
+            } }
+        'using_mirror' {
+            $en = "Using mirror: $($A[0])"; $ja = "指定ミラーを使用: $($A[0])"; $zh = "使用指定镜像：$($A[0])" }
+        'github_ok' {
+            $en = "GitHub direct connection available"
+            $ja = "GitHub への直接接続が利用可能"
+            $zh = "GitHub 直连可用" }
+        'gh_unreachable' {
+            $en = "GitHub unreachable, switching to gh-proxy mirror: $($A[0])"
+            $ja = "GitHub に接続できないため gh-proxy ミラーへ自動切替: $($A[0])"
+            $zh = "GitHub 主站不可达，自动切换 gh-proxy 镜像：$($A[0])" }
+        'downloading' {
+            $en = "Downloading $($A[0]) ← $($A[1])"; $ja = "$($A[0]) をダウンロード中 ← $($A[1])"; $zh = "下载 $($A[0]) ← $($A[1])" }
+        'dl_failed' {
+            $en = "Download of $($A[0]) failed ($($A[1]))"
+            $ja = "$($A[0]) のダウンロードに失敗（$($A[1])）"
+            $zh = "下载 $($A[0]) 失败（$($A[1])）" }
+        'slow_auto' {
+            $en = "Download speed below 100KB/s; NR_MODEL_AUTO_SWITCH=1 -> switching to mirror automatically"
+            $ja = "ダウンロード速度が 100KB/s 未満。NR_MODEL_AUTO_SWITCH=1 -> ミラーへ自動切替"
+            $zh = "下载速度低于 100KB/s，NR_MODEL_AUTO_SWITCH=1 → 自动切换镜像" }
+        'slow_nonint' {
+            $en = "Download speed below 100KB/s. Non-interactive shell, skipping prompt (set NR_MODEL_AUTO_SWITCH=1 to switch automatically)"
+            $ja = "ダウンロード速度が 100KB/s 未満。非対話環境のためスキップ（NR_MODEL_AUTO_SWITCH=1 で自動切替）"
+            $zh = "下载速度低于 100KB/s。非交互环境跳过询问（可设 NR_MODEL_AUTO_SWITCH=1 自动切换镜像）" }
+        'slow_retry' {
+            $en = "⚠ $($A[0]) download too slow (below 100KB/s), retrying on current source"
+            $ja = "⚠ $($A[0]) のダウンロードが遅すぎます（100KB/s 未満）。現在のソースで再試行"
+            $zh = "⚠ $($A[0]) 下载速度过慢（低于 100KB/s），按当前源重试" }
+        'switched' {
+            $en = "Switched to mirror, restarting $($A[0]) from scratch"
+            $ja = "ミラーへ切替、$($A[0]) を最初から再ダウンロードします"
+            $zh = "已切换镜像，从头重新下载 $($A[0])" }
+        'direct_exhausted' {
+            $en = "Direct connection failed repeatedly, switching to gh-proxy mirror for $($A[0])"
+            $ja = "直接接続が繰り返し失敗したため gh-proxy ミラーで $($A[0]) を再試行"
+            $zh = "直连多次失败，切换 gh-proxy 镜像重试 $($A[0])" }
+        'retry_n' {
+            $en = "Retrying $($A[0]) (attempt $($A[1]))..."
+            $ja = "$($A[0]) を再試行（$($A[1]) 回目）..."
+            $zh = "重试 $($A[0])（第 $($A[1]) 次）..." }
+        'exists' {
+            $en = "Already exists: $($A[0]) ($($A[1]))"
+            $ja = "既に存在: $($A[0])（$($A[1])）"
+            $zh = "已存在 $($A[0])：$($A[1])" }
+        'done_dl' {
+            $en = "Done $($A[0]): $($A[1])"
+            $ja = "$($A[0]) 完了: $($A[1])"
+            $zh = "完成 $($A[0])：$($A[1])" }
+        'dl_failed_final' {
+            $en = "✗ $($A[0]) download failed. Check your network and rerun (set NR_MODEL_MIRROR=<mirror prefix> to force mirror)"
+            $ja = "✗ $($A[0]) のダウンロードに失敗。ネットワークを確認して再実行してください（NR_MODEL_MIRROR=<ミラーURL> でミラー強制）"
+            $zh = "✗ $($A[0]) 下载失败，请检查网络后重跑本脚本（可设 NR_MODEL_MIRROR=镜像前缀 强制走镜像）" }
+        'verify_skip' {
+            $en = "⚠ Skipping SHA-256 check for $($A[0]) (NR_MODEL_SKIP_CHECKSUM=1)"
+            $ja = "⚠ $($A[0]) の SHA-256 検証をスキップ（NR_MODEL_SKIP_CHECKSUM=1）"
+            $zh = "⚠ 跳过 $($A[0]) 的 SHA-256 校验（NR_MODEL_SKIP_CHECKSUM=1）" }
+        'verify_ok' {
+            $en = "✓ $($A[0]) SHA-256 check passed"
+            $ja = "✓ $($A[0]) の SHA-256 検証に合格"
+            $zh = "✓ $($A[0]) SHA-256 校验通过" }
+        'verify_fail' {
+            $en = "✗ $($A[0]) SHA-256 check FAILED"
+            $ja = "✗ $($A[0]) の SHA-256 検証に失敗"
+            $zh = "✗ $($A[0]) SHA-256 校验失败" }
+        'verify_expect' {
+            $en = "  expected: $($A[0])"; $ja = "  期待値: $($A[0])"; $zh = "  期望: $($A[0])" }
+        'verify_actual' {
+            $en = "  actual:   $($A[0])"; $ja = "  実際値: $($A[0])"; $zh = "  实际: $($A[0])" }
+        'verify_reason' {
+            $en = "The file may be corrupted, tampered with by the download source, or replaced upstream."
+            $ja = "ファイルが破損・改ざんされたか、上流でモデルが更新された可能性があります。"
+            $zh = "文件可能已损坏、被下载源篡改，或上游已更换模型。" }
+        'verify_deleted' {
+            $en = "  File deleted; rerun this script to download again."
+            $ja = "  ファイルを削除しました。本スクリプトを再実行して再ダウンロードできます。"
+            $zh = "  已删除该文件；可重跑本脚本重新下载。" }
+        'verify_skip_hint' {
+            $en = "  If the upstream model is confirmed updated, set NR_MODEL_SKIP_CHECKSUM=1 to skip the check."
+            $ja = "  上流モデルの更新を確認した場合は NR_MODEL_SKIP_CHECKSUM=1 で検証をスキップできます。"
+            $zh = "  若确认上游模型已更新，可用 NR_MODEL_SKIP_CHECKSUM=1 跳过校验。" }
+        'models_dir' {
+            $en = "Models directory: $($A[0])"; $ja = "モデルディレクトリ: $($A[0])"; $zh = "模型目录：$($A[0])" }
+        'final_hint' {
+            $en = "Run 'resampler info' to confirm the engine can load the models."
+            $ja = "「resampler info」でモデルを読み込めるか確認できます。"
+            $zh = "用 'resampler info' 确认引擎能否加载模型。" }
+    }
+    switch ($Script:UILang) {
+        'en' { return $en }
+        'ja' { return $ja }
+        'zh' { return $zh }
+        default { return "$en`n$ja`n$zh" }
+    }
+}
+
+function Write-Msg {
+    param([string]$Key, [object[]]$A = @())
+    Write-Host (Get-Msg $Key $A)
+}
+
+Write-Msg 'lang_mode'
+
 function Test-GithubReachable {
     # HEAD 探测直连可达性（总超时 8 秒）
     $client = $null
@@ -87,20 +224,26 @@ function Switch-ToMirror {
 
 function Ask-SwitchMirror {
     if ($Script:AutoSwitch -eq '1') {
-        Write-Host "⚠ 下载速度低于 100KB/s，NR_MODEL_AUTO_SWITCH=1 → 自动切换镜像"
+        Write-Msg 'slow_auto'
         return $true
     }
     $interactive = $true
     try { $interactive = -not [Console]::IsInputRedirected } catch { $interactive = $false }
     if (-not $interactive) {
-        Write-Host "⚠ 下载速度低于 100KB/s。非交互环境跳过询问（可设 NR_MODEL_AUTO_SWITCH=1 自动切换镜像）"
+        Write-Msg 'slow_nonint'
         return $false
     }
     try {
-        $ans = Read-Host "下载速度低于 100KB/s，是否切换 gh-proxy 镜像重新下载？[Y/n]"
+        $prompt = switch ($Script:UILang) {
+            'en' { "Download speed below 100KB/s. Switch to gh-proxy mirror and redownload? [Y/n]" }
+            'ja' { "ダウンロード速度が 100KB/s 未満です。gh-proxy ミラーへ切り替えて再ダウンロードしますか？[Y/n]" }
+            'zh' { "下载速度低于 100KB/s，是否切换 gh-proxy 镜像重新下载？[Y/n]" }
+            default { "Speed < 100KB/s. Switch to gh-proxy mirror? [Y/n] / 速度 < 100KB/s。ミラーへ切替？[Y/n] / 速度 < 100KB/s，切换镜像？[Y/n]" }
+        }
+        $ans = Read-Host $prompt
         return ($ans -notmatch '^[Nn]')
     } catch {
-        Write-Host "⚠ 下载速度低于 100KB/s。非交互环境跳过询问（可设 NR_MODEL_AUTO_SWITCH=1 自动切换镜像）"
+        Write-Msg 'slow_nonint'
         return $false
     }
 }
@@ -163,25 +306,25 @@ function Download-One {
     param([string]$Url, [string]$OutFile, [string]$Name)
     $attempt = 0
     while ($true) {
-        Write-Host "下载 $Name ← $($Script:Base)$Url"
+        Write-Msg 'downloading' @($Name, "$($Script:Base)$Url")
         $rc = Invoke-Download -Url "$($Script:Base)$Url" -OutFile $OutFile
         if ($rc -eq 'ok') { return $true }
         if ($rc -eq 'slow') {
             if (($Script:UsingMirror -eq 0) -and ($Script:MirrorAlreadyUsed -eq 0) -and (Ask-SwitchMirror)) {
                 Switch-ToMirror
                 Remove-Item -LiteralPath $OutFile -Force -ErrorAction SilentlyContinue
-                Write-Host "已切换镜像，从头重新下载 $Name"
+                Write-Msg 'switched' @($Name)
                 continue
             }
-            Write-Host "⚠ $Name 下载速度过慢（低于 100KB/s），按当前源重试"
+            Write-Msg 'slow_retry' @($Name)
         } else {
-            Write-Host "下载 $Name 失败（$rc）"
+            Write-Msg 'dl_failed' @($Name, $rc)
         }
         $attempt++
         if ($attempt -ge 3) {
             # 直连重试耗尽且尚未用过镜像 -> 自动切换镜像做最后一轮
             if (($Script:UsingMirror -eq 0) -and ($Script:MirrorAlreadyUsed -eq 0)) {
-                Write-Host "直连多次失败，切换 gh-proxy 镜像重试 $Name"
+                Write-Msg 'direct_exhausted' @($Name)
                 Switch-ToMirror
                 Remove-Item -LiteralPath $OutFile -Force -ErrorAction SilentlyContinue
                 $attempt = 0
@@ -191,7 +334,7 @@ function Download-One {
             return $false
         }
         Remove-Item -LiteralPath $OutFile -Force -ErrorAction SilentlyContinue
-        Write-Host "重试 $Name（第 $attempt 次）..."
+        Write-Msg 'retry_n' @($Name, $attempt)
         Start-Sleep -Seconds 3
     }
 }
@@ -199,36 +342,36 @@ function Download-One {
 function Test-Checksum {
     param([string]$File, [string]$Expected, [string]$Name)
     if ($Script:SkipChecksum -eq '1') {
-        Write-Host "⚠ 跳过 $Name 的 SHA-256 校验（NR_MODEL_SKIP_CHECKSUM=1）"
+        Write-Msg 'verify_skip' @($Name)
         return $true
     }
     $actual = (Get-FileHash -LiteralPath $File -Algorithm SHA256).Hash.ToLower()
     if ($actual -ne $Expected) {
-        Write-Host "✗ $Name SHA-256 校验失败"
-        Write-Host "  期望: $Expected"
-        Write-Host "  实际: $actual"
-        Write-Host "  文件可能已损坏、被下载源篡改，或上游已更换模型。"
+        Write-Msg 'verify_fail' @($Name)
+        Write-Msg 'verify_expect' @($Expected)
+        Write-Msg 'verify_actual' @($actual)
+        Write-Msg 'verify_reason'
         Remove-Item -LiteralPath $File -Force
-        Write-Host "  已删除该文件；可重跑本脚本重新下载。"
-        Write-Host "  若确认上游模型已更新，可用 NR_MODEL_SKIP_CHECKSUM=1 跳过校验。"
+        Write-Msg 'verify_deleted'
+        Write-Msg 'verify_skip_hint'
         return $false
     }
-    Write-Host "✓ $Name SHA-256 校验通过"
+    Write-Msg 'verify_ok' @($Name)
     return $true
 }
 
 function Fetch-Model {
     param([string]$Url, [string]$OutFile, [string]$Name, [string]$Expected)
     if (Test-Path -LiteralPath $OutFile) {
-        Write-Host "已存在 $Name：$OutFile"
+        Write-Msg 'exists' @($Name, $OutFile)
         return (Test-Checksum -File $OutFile -Expected $Expected -Name $Name)
     }
     if (Download-One -Url $Url -OutFile $OutFile -Name $Name) {
         $sizeMb = '{0:N1} MB' -f ((Get-Item -LiteralPath $OutFile).Length / 1MB)
-        Write-Host "完成 $Name：$sizeMb"
+        Write-Msg 'done_dl' @($Name, $sizeMb)
         return (Test-Checksum -File $OutFile -Expected $Expected -Name $Name)
     }
-    Write-Host "✗ $Name 下载失败，请检查网络后重跑本脚本（可设 NR_MODEL_MIRROR=镜像前缀 强制走镜像）"
+    Write-Msg 'dl_failed_final' @($Name)
     return $false
 }
 
@@ -236,19 +379,19 @@ function Fetch-Model {
 if ($Script:MirrorExplicit) {
     Switch-ToMirror
     $Script:Base = $Script:MirrorExplicit
-    Write-Host "使用指定镜像：$($Script:Base)"
+    Write-Msg 'using_mirror' @($Script:Base)
 } elseif (Test-GithubReachable) {
-    Write-Host "GitHub 直连可用"
+    Write-Msg 'github_ok'
 } else {
     Switch-ToMirror
-    Write-Host "⚠ GitHub 主站不可达，自动切换 gh-proxy 镜像：$($Script:Base)"
+    Write-Msg 'gh_unreachable' @($Script:Base)
 }
 
 if (-not (Fetch-Model -Url $Script:FcpeUrl -OutFile (Join-Path $DestDir 'fcpe.onnx') -Name 'FCPE' -Expected $Script:FcpeSha256)) { exit 1 }
 if (-not (Fetch-Model -Url $Script:VocoderUrl -OutFile (Join-Path $DestDir 'pc_nsf_hifigan.onnx') -Name 'PC-NSF-HiFiGAN' -Expected $Script:VocoderSha256)) { exit 1 }
 
 Write-Host ''
-Write-Host "模型目录：$((Resolve-Path -LiteralPath $DestDir).Path)"
+Write-Msg 'models_dir' @((Resolve-Path -LiteralPath $DestDir).Path)
 Get-ChildItem -LiteralPath $DestDir | ForEach-Object { Write-Host ("  {0,12}  {1}" -f $_.Length, $_.Name) }
 Write-Host ''
-Write-Host "用 'resampler info' 确认引擎能否加载模型。"
+Write-Msg 'final_hint'

@@ -45,16 +45,23 @@ jobs:
       - name: Install mdBook
         run: cargo install mdbook --locked
 
-      - name: Build book
-        run: mdbook build book
+      - name: Build books (zh / en / ja)
+        run: |
+          mdbook build book
+          mdbook build book/en
+          mdbook build book/ja
 
       # 以孤儿提交推送到 gh-pages 分支，保持该分支只有构建产物、无历史包袱。
+      # 站点结构：/ = 简体中文，/en/ = English，/ja/ = 日本語
       - name: Publish to gh-pages branch
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           cd book/book
+          mkdir -p en ja
+          cp -r ../en/book/. en/
+          cp -r ../ja/book/. ja/
           touch .nojekyll
           rm -rf .git
           git init -q

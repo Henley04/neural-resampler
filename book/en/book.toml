@@ -1,0 +1,19 @@
+[book]
+title = "neural-resampler Documentation"
+authors = ["neural-resampler"]
+description = "User documentation for the universal neural resampler engine: a pure Rust + ONNX rewrite of HiFiSampler"
+language = "en"
+src = "src"
+
+[output.html]
+default-theme = "rust"
+preferred-dark-theme = "coal"
+git-repository-url = "https://github.com/Henley04/neural-resampler"
+edit-url-template = "https://github.com/Henley04/neural-resampler/edit/master/book/en/{path}"
+
+[output.html.fold]
+enable = true
+level = 1
+
+[output.html.search]
+enable = true

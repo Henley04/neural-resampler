@@ -1,0 +1,19 @@
+[book]
+title = "neural-resampler ドキュメント"
+authors = ["neural-resampler"]
+description = "汎用ニューラルリサンプラーエンジン使用ドキュメント：HiFiSampler の純 Rust + ONNX 再実装"
+language = "ja"
+src = "src"
+
+[output.html]
+default-theme = "rust"
+preferred-dark-theme = "coal"
+git-repository-url = "https://github.com/Henley04/neural-resampler"
+edit-url-template = "https://github.com/Henley04/neural-resampler/edit/master/book/ja/{path}"
+
+[output.html.fold]
+enable = true
+level = 1
+
+[output.html.search]
+enable = true

@@ -1,5 +1,7 @@
 # neural-resampler
 
+[English](README.en.md) ｜ [日本語](README.ja.md) ｜ 简体中文
+
 [![CI - Build & Test](https://github.com/Henley04/neural-resampler/actions/workflows/ci.yml/badge.svg)](https://github.com/Henley04/neural-resampler/actions/workflows/ci.yml)
 
 通用神经重采样器引擎 —— 用 **纯 Rust + ONNX** 重写的 HiFiSampler。

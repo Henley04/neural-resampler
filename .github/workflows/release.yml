@@ -152,7 +152,7 @@ jobs:
           cp scripts/download_models.sh "$DIST/download_models.sh"
           chmod +x "$DIST/download_models.sh"
           cp scripts/download_models.ps1 "$DIST/download_models.ps1"
-          cp README.md LICENSE "$DIST/"
+          cp README*.md LICENSE "$DIST/"
           cp -r docs "$DIST/" 2>/dev/null || true
           mkdir -p "$DIST/models"
           cp models/README.md "$DIST/models/" 2>/dev/null || true
@@ -177,7 +177,7 @@ jobs:
           cp config/resampler.yaml "$DIST/config.resampler.yaml"
           cp scripts/download_models.sh "$DIST/download_models.sh"
           cp scripts/download_models.ps1 "$DIST/download_models.ps1"
-          cp README.md LICENSE "$DIST/"
+          cp README*.md LICENSE "$DIST/"
           cp -r docs "$DIST/" 2>/dev/null || true
           mkdir -p "$DIST/models"
           cp models/README.md "$DIST/models/" 2>/dev/null || true
