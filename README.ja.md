@@ -42,6 +42,8 @@ cargo build --release
 # 2. 准备模型（见 models/README.md）
 bash scripts/download_models.sh          # Windows: scripts/download_models.ps1
                                          # 或手动把 ONNX 放进 models/
+# ダウンロード後、スクリプトは NR_MODELS_DIR をユーザー環境変数に自動設定します
+# （NR_SKIP_ENV=1 でスキップ）。使用中は models ディレクトリを移動しないでください
 
 # 3. 自检：生成测试音并跑通整条管线
 ./target/release/resampler selftest
@@ -185,7 +187,11 @@ neural-resampler-x86_64-unknown-linux-gnu/
 モデルはリポジトリに同梱していません。CI や空の環境では `scripts/download_models.sh`
 （Windows: `scripts/download_models.ps1`）で取得してください。スクリプトは GitHub への直接接続が到達不能、
 または速度が 100KB/s 未満のときに自動で gh-proxy ミラーへフォールバックし（`NR_MODEL_MIRROR` で強制指定可）、
-ダウンロード後に SHA-256 検証を行います。
+ダウンロード後に SHA-256 検証を行い、さらに `NR_MODELS_DIR` をユーザー環境変数に自動設定します——
+以降、リサンプラーがエディタのフォルダ（OpenUtau の `Resamplers/` など）にコピーされてもモデルを
+見つけられます（⚠ この方法使用中は models ディレクトリを移動しないでください。`NR_SKIP_ENV=1` で
+自動設定をスキップ）。モデルが欠落している場合、レンダリングは明示的なエラーで終了します（三言語、
+対処法つき）。`--allow-stub` / `NR_ALLOW_STUB=1` で許可できます（オフライン検証のみ）。
 
 ## テストと CI
 

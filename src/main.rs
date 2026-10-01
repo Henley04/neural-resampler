@@ -41,6 +41,10 @@ struct Cli {
     /// 日志格式：text 或 json
     #[arg(long, global = true, default_value = "text")]
     log_format: String,
+
+    /// 允许模型缺失时以降级后端（stub）继续渲染（仅限离线自测）
+    #[arg(long, global = true)]
+    allow_stub: bool,
 }
 
 #[derive(Debug, Subcommand)]
@@ -119,6 +123,9 @@ struct RenderArgs {
 /// 全局选项名（可出现在裸 UTAU 调用之前）。
 const GLOBAL_FLAGS: [&str; 4] = ["--config", "--models", "--log-level", "--log-format"];
 
+/// 无值的全局开关（布尔 flag，不吞下一个参数）。
+const GLOBAL_FLAGLESS: [&str; 1] = ["--allow-stub"];
+
 /// 把开头的全局选项与后续参数分开。
 ///
 /// 这样 `resampler --models /path in.wav out.wav C4 ...` 也能走 UTAU 协议路径，
@@ -129,7 +136,10 @@ fn split_global_flags(raw: &[String]) -> (Vec<String>, Vec<String>) {
     while i < raw.len() {
         let a = raw[i].as_str();
         let name = a.split('=').next().unwrap_or(a);
-        if GLOBAL_FLAGS.contains(&name) {
+        if GLOBAL_FLAGLESS.contains(&name) {
+            globals.push(a.to_string());
+            i += 1;
+        } else if GLOBAL_FLAGS.contains(&name) {
             globals.push(a.to_string());
             if !a.contains('=') {
                 if let Some(v) = raw.get(i + 1) {
@@ -164,6 +174,7 @@ fn main() -> Result<()> {
         let adapter = UtauAdapter::new();
         let params = adapter.parse(&rest)?;
         let engine = engine_from_config(cli.config.as_deref(), cli.models.as_deref())?;
+        ensure_real_vocoder(&engine, &cli)?;
         let stats = adapter.render(&engine, &params)?;
         log::info!(
             "渲染完成: {:?} → {:?}（{} 帧 / {:.1}ms / {:.1}ms）",
@@ -219,6 +230,43 @@ fn build_engine(cli: &Cli) -> Result<Engine> {
     engine_from_config(cli.config.as_deref(), cli.models.as_deref())
 }
 
+/// 是否豁免 stub 降级限制（`--allow-stub` 或 `NR_ALLOW_STUB=1/true`）。
+fn stub_allowed(cli: &Cli) -> bool {
+    if cli.allow_stub {
+        return true;
+    }
+    matches!(
+        std::env::var("NR_ALLOW_STUB").map(|v| v.to_ascii_lowercase()),
+        Ok(ref v) if v == "1" || v == "true"
+    )
+}
+
+/// 渲染前守卫：声码器处于 stub 降级后端时拒绝渲染。
+///
+/// 背景：OpenUtau 会把 resampler 可执行文件单独复制进 `Resamplers/`，
+/// 子进程工作目录下没有模型，引擎会静默降级为占位后端且 exit 0，
+/// 用户只得到音质不可用的音频而毫无感知。此处改为：
+///
+/// 1. 向可执行文件同级目录写三语警告文件（幂等，尽力而为）
+/// 2. stderr 打印三语修复指引（会进入 OpenUtau 的错误弹窗与日志）
+/// 3. 返回错误 → 进程退出码非 0，且**不写输出文件** →
+///    OpenUtau 因输出文件缺失抛 `ResamplerFailedException` 弹错
+///
+/// 例外：`--allow-stub` / `NR_ALLOW_STUB=1`（离线自测用），selftest 子命令天然豁免。
+fn ensure_real_vocoder(engine: &Engine, cli: &Cli) -> Result<()> {
+    if !engine.is_stub() || stub_allowed(cli) {
+        return Ok(());
+    }
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(dir) = exe.parent() {
+            neural_resampler::core::pipeline::write_missing_model_warning(dir);
+        }
+    }
+    let msg = neural_resampler::core::pipeline::stub_degraded_message();
+    eprintln!("{msg}");
+    bail!("声码器模型缺失（stub 降级被拒绝渲染）；详见上方说明 / see message above")
+}
+
 fn cmd_render(cli: &Cli, a: &RenderArgs) -> Result<()> {
     let params = UtauParams {
         input_file: a.input.clone(),
@@ -241,6 +289,7 @@ fn cmd_render(cli: &Cli, a: &RenderArgs) -> Result<()> {
         bail!("无法解析音名: {}", a.pitch);
     }
     let engine = build_engine(cli)?;
+    ensure_real_vocoder(&engine, cli)?;
     let stats = engine.run_pipeline(&params)?;
     println!(
         "已写出 {:?}：{} 帧 / {:.1}ms / 后端 {} / F0 {} / 耗时 {:.1}ms",
@@ -271,6 +320,7 @@ fn cmd_batch(cli: &Cli, list: &Path, jobs: usize) -> Result<()> {
     // 模型被反复加载（每行多 ~80ms），多会话内部线程互相争抢还会让
     // --jobs 的并行收益变成负数。
     let engine = std::sync::Arc::new(build_engine(cli)?);
+    ensure_real_vocoder(&engine, cli)?;
 
     if jobs > 1 {
         let pool = rayon::ThreadPoolBuilder::new().num_threads(jobs).build()?;
@@ -404,4 +454,42 @@ fn cmd_config(cli: &Cli, output: &Path) -> Result<()> {
     cfg.save(output)?;
     println!("已导出配置: {output:?}");
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn stub_allowed_by_flag_or_env() {
+        let cli = globals_to_cli(&["--allow-stub".to_string()]);
+        assert!(stub_allowed(&cli));
+        let cli = globals_to_cli(&[]);
+        assert!(!stub_allowed(&cli));
+
+        std::env::set_var("NR_ALLOW_STUB", "1");
+        assert!(stub_allowed(&cli));
+        std::env::set_var("NR_ALLOW_STUB", "true");
+        assert!(stub_allowed(&cli));
+        std::env::set_var("NR_ALLOW_STUB", "0");
+        assert!(!stub_allowed(&cli));
+        std::env::set_var("NR_ALLOW_STUB", "false");
+        assert!(!stub_allowed(&cli));
+        std::env::remove_var("NR_ALLOW_STUB");
+        assert!(!stub_allowed(&cli));
+    }
+
+    #[test]
+    fn utau_invocation_with_allow_stub_flag_splits_globals() {
+        let raw = vec![
+            "--allow-stub".to_string(),
+            "in.wav".to_string(),
+            "out.wav".to_string(),
+            "C4".to_string(),
+            "100".to_string(),
+        ];
+        let (globals, rest) = split_global_flags(&raw);
+        assert_eq!(globals, vec!["--allow-stub".to_string()]);
+        assert_eq!(rest.len(), 4);
+    }
 }

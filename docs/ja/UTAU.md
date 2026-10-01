@@ -41,14 +41,20 @@ resampler <in.wav> <out.wav> <pitch> <velocity> <flags> <offset> <length_req>
 ## モデルディレクトリの解決
 
 OpenUtau がリサンプラーをインストールすると、実行ファイルを `Resamplers/`
-へ**コピー**します。レンダリング時の作業ディレクトリに `models/` はないため、
-エンジンは静かに劣化します（音は出ますが音質は実用になりません）。モデル
-ディレクトリは次の順で解決されます：コマンドラインの `--models` > 環境変数
+へ**コピー**します。レンダリング時の作業ディレクトリに `models/` はありません。
+モデルが欠落している場合、エンジンは**もう静かに劣化しません**：レンダリングは
+明示的なエラーで終了し（三言語メッセージ＋リサンプラーの隣に
+`MODEL-MISSING-READ-ME.txt` を生成）、実用にならない音声は出力されません。
+モデルディレクトリは次の順で解決されます：コマンドラインの `--models` > 環境変数
 `NR_MODELS_DIR` > 実行ファイルと同じ階層の `models/`（つまり
-`Resamplers/models/`）> 作業ディレクトリの `models/`。OpenUtau では
-`NR_MODELS_DIR` を設定するか、モデルを `Resamplers/models/` に置き、
-`resampler info` でボコーダのバックエンドが `onnxruntime` であることを
-確認してください。
+`Resamplers/models/`）> 作業ディレクトリの `models/`。OpenUtau では、同梱の
+`download_models.sh` / `download_models.ps1` を一度実行してください——
+スクリプトが自動的に `NR_MODELS_DIR` をユーザー環境変数に書き込みます
+（`NR_SKIP_ENV=1` でスキップ。⚠ この方法使用中は models ディレクトリを移動
+しないでください）。またはモデルを `Resamplers/models/` に置きます。
+`resampler info` でボコーダのバックエンドが `onnxruntime` であることを確認して
+ください。オフライン検証で劣化バックエンドを使う場合は `--allow-stub` を付けるか
+`NR_ALLOW_STUB=1` を設定してください。
 
 ## サポートされるフラグ
 

@@ -22,18 +22,32 @@ OpenUtau 通过 `Resamplers` 目录管理第三方 resampler。它按标准 resa
 ## 模型放置（重要）
 
 OpenUtau 安装 resampler 时会把可执行文件**复制**到自己的 `Resamplers/` 目录，
-渲染时的工作目录是 OpenUtau 安装根目录——那里的 `models/` 不存在，引擎会
-**静默降级**（Stub 声码器 + 内置 DSP F0：能出声、不报错，但音质不可用）。
+渲染时的工作目录是 OpenUtau 安装根目录——那里的 `models/` 不存在。模型缺失时
+引擎**不再静默降级**：渲染会被拒绝，OpenUtau 弹出错误对话框，错误信息为三语
+并附解决方法；同时在 resampler 可执行文件旁边生成
+`MODEL-MISSING-READ-ME.txt` 警告文件。
 
 模型目录按以下顺序解析：
 
 1. 命令行 `--models`（OpenUtau 不会传，仅供 CLI 手动调用）
-2. 环境变量 `NR_MODELS_DIR`（推荐：设一次，全局生效）
+2. 环境变量 `NR_MODELS_DIR`（**推荐**：下载脚本会自动设置，见下）
 3. 可执行文件**同级**的 `models/`（即 `Resamplers/models/`）
 4. 当前工作目录的 `models/`（发布包布局）
 
-OpenUtau 场景推荐 2 或 3。放好后用 `resampler info` 确认声码器后端不再是
-`stub`（应显示 `onnxruntime`）。
+OpenUtau 场景推荐 2 或 3：
+
+* **推荐**：在发布包目录运行一次 `download_models.sh` / `download_models.ps1`。
+  脚本下载并校验模型后，会自动把 `NR_MODELS_DIR` 写入用户级环境变量
+  （`NR_SKIP_ENV=1` 可跳过）。此后无论 resampler 被复制到哪里都能找到模型，
+  把 exe 拖进 OpenUtau 即可，无需其他配置。
+  ⚠ 使用此方案期间**不要移动或重命名**该 `models/` 目录；若必须移动，请重跑
+  脚本或手动更新 `NR_MODELS_DIR`。
+* 或者把 `models/` 放到 `Resamplers/models/`（与 exe 同级）。
+
+设好后用 `resampler info` 确认声码器后端显示 `onnxruntime`（而不是 `stub`）。
+
+> 离线自测确需降级运行时：加 `--allow-stub` 参数或设 `NR_ALLOW_STUB=1`；
+> `selftest` 与 `info` 子命令不受影响。
 
 ## 路径注意事项
 

@@ -22,6 +22,12 @@
 # （LC_ALL/LC_MESSAGES/LANG）选择简体中文 / 日本語 / English；
 # 检测不到或系统语言不属于三者时，三语同时显示。
 #
+# 环境变量（推荐保持开启）：两个模型下载并校验通过后，自动把
+# NR_MODELS_DIR=<本目录>/models 写入用户级环境变量——这样 resampler
+# 即使被单独复制进编辑器目录（如 OpenUtau 的 Resamplers/）也能找到模型。
+# 注意：使用此方案期间不要移动/重命名 models 目录（详见脚本输出的说明）。
+# 设 NR_SKIP_ENV=1 可跳过。
+#
 # 模型来源于第三方仓库，许可遵循各自发布页要求。
 set -euo pipefail
 
@@ -174,6 +180,38 @@ msg() {
             en="Run 'resampler info' to confirm the engine can load the models."
             ja="「resampler info」でモデルを読み込めるか確認できます。"
             zh="用 'resampler info' 确认引擎能否加载模型。" ;;
+        env_skip)
+            en="NR_SKIP_ENV=1 set - skipping automatic NR_MODELS_DIR setup."
+            ja="NR_SKIP_ENV=1 が設定されているため NR_MODELS_DIR の自動設定をスキップ。"
+            zh="已设置 NR_SKIP_ENV=1，跳过 NR_MODELS_DIR 自动设置。" ;;
+        env_already)
+            en="✓ User environment variable NR_MODELS_DIR is already set to the same value: $1"
+            ja="✓ ユーザー環境変数 NR_MODELS_DIR は既に同じ値です: $1"
+            zh="✓ 用户环境变量 NR_MODELS_DIR 已是相同值：$1" ;;
+        env_updated)
+            en="Updating NR_MODELS_DIR: $2 -> $1"
+            ja="NR_MODELS_DIR を更新: $2 -> $1"
+            zh="更新 NR_MODELS_DIR：$2 → $1" ;;
+        env_set_linux)
+            en="✓ Set NR_MODELS_DIR = $1 (user-level). Wrote environment.d/neural-resampler.conf and shell rc files (.bashrc / .zshrc / .profile if present). New terminal sessions (or re-login) will pick it up."
+            ja="✓ NR_MODELS_DIR = $1 をユーザー環境変数に設定。environment.d/neural-resampler.conf とシェル rc（.bashrc / .zshrc / .profile があれば）に追記。新しいターミナル（または再ログイン）で有効。"
+            zh="✓ 已将 NR_MODELS_DIR = $1 写入用户级环境变量：environment.d/neural-resampler.conf 及 shell rc 文件（.bashrc / .zshrc / .profile 如存在）。新开终端（或重新登录）后生效。" ;;
+        env_set_mac)
+            en="✓ Set NR_MODELS_DIR = $1 (launchctl + ~/.zshenv if present). Note: launchctl setenv does not survive a reboot - rerun this script after reboot, or keep the models folder next to the resampler."
+            ja="✓ NR_MODELS_DIR = $1 を設定（launchctl + ~/.zshenv があれば追記）。注意：launchctl setenv は再起動で失効します - 再起動後は本スクリプトを再実行するか、resampler の隣に models を置いてください。"
+            zh="✓ 已设置 NR_MODELS_DIR = $1（launchctl + ~/.zshenv 如存在）。注意：launchctl setenv 重启后失效——重启后请重跑本脚本，或将 models 放在 resampler 同级。" ;;
+        env_unsupported)
+            en="Automatic environment setup is not supported on this OS. Please set NR_MODELS_DIR=$1 manually."
+            ja="この OS では環境変数の自動設定に対応していません。NR_MODELS_DIR=$1 を手動で設定してください。"
+            zh="本系统不支持自动设置环境变量，请手动设置 NR_MODELS_DIR=$1。" ;;
+        env_dont_move)
+            en="⚠ IMPORTANT: while using NR_MODELS_DIR, do NOT move or rename the models directory ($1). If you move it, rerun this script or update NR_MODELS_DIR, otherwise the resampler cannot find the models."
+            ja="⚠ 重要：NR_MODELS_DIR を使用する間、models ディレクトリ（$1）を移動・リネームしないでください。移動した場合は本スクリプトを再実行するか NR_MODELS_DIR を更新してください。"
+            zh="⚠ 重要：使用 NR_MODELS_DIR 方案期间，请勿移动或重命名 models 目录（$1）。若移动了，请重跑本脚本或更新 NR_MODELS_DIR，否则重采样器将找不到模型。" ;;
+        env_undo)
+            en="To undo: delete the NR_MODELS_DIR user environment variable (or remove the 'neural-resampler download_models' lines in your shell rc / environment.d config)."
+            ja="元に戻す：ユーザー環境変数 NR_MODELS_DIR を削除（またはシェル rc / environment.d の「neural-resampler download_models」行を削除）。"
+            zh="撤销方法：删除用户环境变量 NR_MODELS_DIR（或删除 shell rc / environment.d 配置中带「neural-resampler download_models」标记的行）。" ;;
         *) ;;
     esac
     case "$UI_LANG" in
@@ -313,6 +351,56 @@ fetch() {
     return 1
 }
 
+# ---- 模型就绪后：自动把 NR_MODELS_DIR 写入用户级环境变量 ----
+#
+# 目的：OpenUtau 会把 resampler 可执行文件单独复制进 Resamplers/ 目录，
+# exe 同级没有 models/。设置 NR_MODELS_DIR 后，无论 exe 被复制/移动到哪，
+# 都能找到本目录下的模型。NR_SKIP_ENV=1 可跳过。
+append_rc() {
+    local rc="$1"
+    [[ -f "$rc" ]] || return 0
+    grep -qF "neural-resampler download_models" "$rc" 2>/dev/null && return 0
+    {
+        printf '\n# neural-resampler download_models (auto-added)\n'
+        printf 'export NR_MODELS_DIR="%s"\n' "$DEST"
+    } >> "$rc"
+}
+
+setup_env_var() {
+    if [[ "${NR_SKIP_ENV:-0}" == "1" ]]; then
+        msg env_skip >&2
+        return 0
+    fi
+    local cur="${NR_MODELS_DIR:-}"
+    if [[ "$cur" == "$DEST" ]]; then
+        msg env_already "$DEST" >&2
+    elif [[ -n "$cur" ]]; then
+        msg env_updated "$DEST" "$cur" >&2
+    fi
+    local os_name
+    os_name="$(uname -s)"
+    if [[ "$os_name" == "Linux" ]]; then
+        # systemd 用户环境：GUI（含 AppImage）启动的进程也能读到
+        local envd="${XDG_CONFIG_HOME:-$HOME/.config}/environment.d"
+        mkdir -p "$envd"
+        printf 'NR_MODELS_DIR="%s"\n' "$DEST" > "$envd/neural-resampler.conf"
+        append_rc "$HOME/.bashrc"
+        append_rc "$HOME/.zshrc"
+        append_rc "$HOME/.profile"
+        msg env_set_linux "$DEST" >&2
+    elif [[ "$os_name" == "Darwin" ]]; then
+        launchctl setenv NR_MODELS_DIR "$DEST" 2>/dev/null || true
+        append_rc "$HOME/.zshenv"
+        msg env_set_mac "$DEST" >&2
+    else
+        msg env_unsupported "$DEST" >&2
+        return 0
+    fi
+    echo
+    msg env_dont_move "$DEST" >&2
+    msg env_undo >&2
+}
+
 # ---- 选择下载源 ----
 if [[ -n "$MIRROR_EXPLICIT" ]]; then
     switch_to_mirror
@@ -327,6 +415,10 @@ fi
 
 fetch "$FCPE_URL" "$DEST/fcpe.onnx" "FCPE" "$FCPE_SHA256"
 fetch "$VOCODER_URL" "$DEST/pc_nsf_hifigan.onnx" "PC-NSF-HiFiGAN" "$VOCODER_SHA256"
+
+# 两个模型就绪 → 规范化为绝对路径并自动设置环境变量
+DEST="$(cd "$DEST" && pwd)"
+setup_env_var
 
 echo
 msg models_dir "$DEST"

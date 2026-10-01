@@ -24,20 +24,36 @@ Following the [official OpenUtau wiki](https://github.com/openutau/OpenUtau/wiki
 
 When you install a resampler, OpenUtau **copies** the executable into its own
 `Resamplers/` directory. At render time the working directory is the OpenUtau
-installation root — the `models/` folder there does not exist, so the engine
-would **silently degrade** (Stub vocoder + built-in DSP F0: it produces audio
-without any error, but the quality is unusable).
+installation root — the `models/` folder there does not exist. When models are
+missing, the engine **no longer degrades silently**: rendering is refused,
+OpenUtau shows an error dialog with a trilingual message including the fix, and
+a `MODEL-MISSING-READ-ME.txt` warning file is created next to the resampler
+executable.
 
 The model directory is resolved in this order:
 
 1. Command-line `--models` (OpenUtau never passes it; for manual CLI use only)
-2. The `NR_MODELS_DIR` environment variable (recommended: set once, works everywhere)
+2. The `NR_MODELS_DIR` environment variable (**recommended**: set automatically by the download script, see below)
 3. A `models/` folder **next to the executable** (i.e. `Resamplers/models/`)
 4. A `models/` folder in the current working directory (release package layout)
 
-For OpenUtau, option 2 or 3 is recommended. Afterwards run `resampler info`
-and make sure the vocoder backend is no longer `stub` (it should show
-`onnxruntime`).
+For OpenUtau, option 2 or 3 is recommended:
+
+* **Recommended**: run `download_models.sh` / `download_models.ps1` once in the
+  release package directory. After downloading and verifying the models, the
+  script automatically writes `NR_MODELS_DIR` into your user environment
+  (`NR_SKIP_ENV=1` to skip). Afterwards the resampler finds the models no matter
+  where it was copied — just drag the exe into OpenUtau, no other setup needed.
+  ⚠ While using this method, do **not** move or rename that `models/` directory;
+  if you must move it, rerun the script or update `NR_MODELS_DIR` manually.
+* Or place a copy of `models/` at `Resamplers/models/` (next to the exe).
+
+Afterwards run `resampler info` and make sure the vocoder backend shows
+`onnxruntime` (not `stub`).
+
+> If you intentionally need the degraded backend for offline testing: pass
+> `--allow-stub` or set `NR_ALLOW_STUB=1`; the `selftest` and `info`
+> subcommands are unaffected.
 
 ## Path notes
 

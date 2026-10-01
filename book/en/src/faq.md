@@ -12,18 +12,29 @@ So you obtain the models yourself; the release package includes `download_models
 
 ### Can it run without models?
 
-It runs, but is of no practical value. Without models the vocoder degrades to a Stub and F0 falls back to the built-in DSP;
-the pipeline still completes and makes sound, but the quality is unusable. This fallback exists to make
-connectivity checks easy, not for real use. `./resampler info` tells you exactly which backend is in use.
+Depends on the use case. `resampler selftest` and `resampler info` are unaffected
+and can verify the pipeline; but `render` / `batch` / UTAU-protocol rendering
+**fails with an explicit error** when models are missing (trilingual message with
+the fix), instead of producing unusable audio. If you intentionally need the
+degraded backend for offline testing, pass `--allow-stub` or set
+`NR_ALLOW_STUB=1`.
 
-### Rendering in OpenUtau sounds wrong (as if degraded)?
+### Rendering in OpenUtau fails with "vocoder model missing"?
 
 When OpenUtau installs a resampler it **copies** the exe into its own
-`Resamplers/` directory; the working directory at render time has no `models/`
-folder, so the engine degrades silently (sound comes out, no error is shown).
-Fix: put the models into `Resamplers/models/`, or set the `NR_MODELS_DIR`
-environment variable to the model directory. Then run `resampler info` and
-confirm the vocoder backend shows `onnxruntime` instead of `stub`.
+`Resamplers/` directory — the models do not come along. Since v0.1.3 this is no
+longer a silent degradation (previously: muffled audio, no error); rendering now
+fails with a trilingual error dialog, and a `MODEL-MISSING-READ-ME.txt` file
+appears next to the resampler. Two ways to fix:
+
+1. **Recommended**: run `download_models.sh` / `download_models.ps1` once in the
+   release package directory — the script automatically writes `NR_MODELS_DIR`
+   into your user environment (the exe can then live anywhere; just do not move
+   the models directory while using this method)
+2. Or copy `models/` to `Resamplers/models/` (next to the exe)
+
+Then run `resampler info` and confirm the vocoder backend shows `onnxruntime`
+instead of `stub`.
 
 ### Why is the first render slow?
 

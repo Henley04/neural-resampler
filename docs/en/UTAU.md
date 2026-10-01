@@ -41,13 +41,19 @@ See the [OpenUtau wiki: Resamplers and Wavtools](https://github.com/openutau/Ope
 
 When OpenUtau installs a resampler it **copies** the executable into
 `Resamplers/`; there is no `models/` folder in the working directory at render
-time, so the engine degrades silently (audio is produced but quality is
-unusable). The model directory is resolved in this order: command-line
-`--models` > the `NR_MODELS_DIR` environment variable > a `models/` folder next
-to the executable (i.e. `Resamplers/models/`) > a `models/` folder in the
-working directory. For OpenUtau, set `NR_MODELS_DIR` or put the models into
-`Resamplers/models/`, then confirm with `resampler info` that the vocoder
-backend shows `onnxruntime`.
+time. When models are missing, the engine **no longer degrades silently**:
+rendering fails with an explicit error (trilingual message, plus a
+`MODEL-MISSING-READ-ME.txt` file next to the resampler). The model directory is
+resolved in this order: command-line `--models` > the `NR_MODELS_DIR`
+environment variable > a `models/` folder next to the executable (i.e.
+`Resamplers/models/`) > a `models/` folder in the working directory. For
+OpenUtau, run the bundled `download_models.sh` / `download_models.ps1` once —
+the script automatically writes `NR_MODELS_DIR` into your user environment
+(`NR_SKIP_ENV=1` to skip; ⚠ do not move the models directory while using this
+method) — or put the models into `Resamplers/models/`. Then confirm with
+`resampler info` that the vocoder backend shows `onnxruntime`. For offline
+testing with the degraded backend, pass `--allow-stub` or set
+`NR_ALLOW_STUB=1`.
 
 ## Supported Flags
 

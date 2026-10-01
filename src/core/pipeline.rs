@@ -157,6 +157,11 @@ impl Engine {
         self.backend.name()
     }
 
+    /// 声码器是否处于内置 Stub 降级后端（模型缺失时的占位实现，音质不可用）。
+    pub fn is_stub(&self) -> bool {
+        self.backend.name() == "stub"
+    }
+
     pub fn f0_backend_name(&self) -> &str {
         self.f0.as_ref().map(|e| e.name()).unwrap_or("score-only")
     }
@@ -652,6 +657,69 @@ pub fn run_pipeline_default(params: &UtauParams) -> Result<RenderStats> {
     engine.run_pipeline(params)
 }
 
+/// 「模型缺失」警告文件的文件名（写到可执行文件同级目录）。
+pub const MODEL_MISSING_WARNING_FILENAME: &str = "MODEL-MISSING-READ-ME.txt";
+
+/// Stub 降级时的三语说明（stderr / 宿主错误弹窗文本）。
+///
+/// OpenUtau 不检查退出码，只检查输出文件是否存在；渲染器拒绝写输出文件时，
+/// OpenUtau 会抛 `ResamplerFailedException` 弹出错误对话框，而本说明文本
+/// 会随子进程 stderr 出现在对话框与日志中——这是用户能看到的显式提示。
+pub fn stub_degraded_message() -> String {
+    "[EN] neural-resampler: vocoder model NOT found — fell back to the built-in stub \
+backend (silent/noise quality). Rendering ABORTED so you are not left with unusable audio. \
+Fix: run download_models.sh / download_models.ps1 next to the resampler to fetch the models, \
+or set the NR_MODELS_DIR environment variable to the model directory, \
+or pass --models <dir>. To intentionally allow the stub (offline testing only), \
+pass --allow-stub or set NR_ALLOW_STUB=1.\n\
+[JA] neural-resampler：ボコーダーモデルが見つからないため、内蔵スタブにフォールバックしました\
+（音質は使用不可）。無意味な音声を出力しないよう、レンダリングを中断しました。\
+対処：resampler と同じ場所で download_models.sh / download_models.ps1 を実行してモデルを取得するか、\
+環境変数 NR_MODELS_DIR にモデルディレクトリを設定するか、--models <dir> を指定してください。\
+意図的にスタブを許可する（オフライン検証用）場合は --allow-stub または NR_ALLOW_STUB=1 を指定。\n\
+[ZH] 神经重采样器：未找到声码器模型，已降级为内置占位后端（音质不可用）。\
+为避免输出不可用的音频，本次渲染已中止。\
+解决方法：在 resampler 同目录运行 download_models.sh / download_models.ps1 下载模型，\
+或设置环境变量 NR_MODELS_DIR 指向模型目录，或用 --models <目录> 指定。\
+若确要允许降级（仅限离线自测），请加 --allow-stub 或设置 NR_ALLOW_STUB=1。\n\
+Docs: https://henley04.github.io/neural-resampler/"
+        .to_string()
+}
+
+/// 向 `dir`（通常是可执行文件同级目录）写「模型缺失」警告文件，幂等。
+///
+/// 返回是否实际确保了文件存在（写入成功或本已存在）。目录不可写等
+/// 失败情形不传播错误——警告文件只是尽力而为的第二提示通道。
+pub fn write_missing_model_warning(dir: &Path) -> bool {
+    let path = dir.join(MODEL_MISSING_WARNING_FILENAME);
+    if path.exists() {
+        return true;
+    }
+    let content = format!(
+        "This file was created by neural-resampler.\n\n{}\n\n\
+[ZH] 把 resampler 拖进编辑器（如 OpenUtau 的 Resamplers/ 文件夹）只会复制可执行文件，\
+模型不会跟着走。请让本文件旁边的 models/ 目录有模型文件，或设置 NR_MODELS_DIR 环境变量，\
+详见上方渲染错误信息与在线文档。\n\
+[JA] resampler をエディタ（OpenUtau の Resamplers/ など）にドラッグしても、\
+実行ファイルだけがコピーされ、モデルは同行しません。このファイルの隣の models/ にモデルを\
+配置するか、環境変数 NR_MODELS_DIR を設定してください。\n\
+[EN] Dragging the resampler into the editor (e.g. OpenUtau's Resamplers/ folder) copies only \
+the executable, not the models. Place models in the models/ folder next to this file, \
+or set the NR_MODELS_DIR environment variable.\n",
+        stub_degraded_message()
+    );
+    match std::fs::write(&path, content) {
+        Ok(()) => {
+            log::warn!("已写出模型缺失警告文件: {:?}", path);
+            true
+        }
+        Err(err) => {
+            log::debug!("警告文件写入失败（忽略）: {:?}: {err}", path);
+            false
+        }
+    }
+}
+
 /// 模型目录解析链：显式参数 > `NR_MODELS_DIR` > exe 同级 `models/` > None（配置默认）。
 ///
 /// exe 同级回退覆盖 UTAU/OpenUtau 的安装场景：编辑器会把 resampler 可执行文件
@@ -755,6 +823,43 @@ mod tests {
     }
 
     #[test]
+    fn write_missing_model_warning_idempotent() {
+        let dir = std::env::temp_dir().join(format!("nr-warn-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join(MODEL_MISSING_WARNING_FILENAME);
+        std::fs::remove_file(&path).ok();
+
+        assert!(write_missing_model_warning(&dir));
+        assert!(path.exists());
+        let content = std::fs::read_to_string(&path).unwrap();
+        assert!(content.contains("[EN]"));
+        assert!(content.contains("[JA]"));
+        assert!(content.contains("[ZH]"));
+        assert!(content.contains("NR_MODELS_DIR"));
+        assert!(content.contains("--allow-stub"));
+
+        // 幂等：二次写入仍返回 true，且不破坏既有内容
+        std::fs::write(&path, "keep-me").unwrap();
+        assert!(write_missing_model_warning(&dir));
+        assert_eq!(std::fs::read_to_string(&path).unwrap(), "keep-me");
+
+        std::fs::remove_file(&path).ok();
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn stub_message_is_trilingual_and_actionable() {
+        let msg = stub_degraded_message();
+        assert!(msg.contains("[EN]") && msg.contains("[JA]") && msg.contains("[ZH]"));
+        // 必须给出全部三条解决路径与豁免方式
+        assert!(msg.contains("download_models"));
+        assert!(msg.contains("NR_MODELS_DIR"));
+        assert!(msg.contains("--models"));
+        assert!(msg.contains("--allow-stub"));
+        assert!(msg.contains("NR_ALLOW_STUB"));
+    }
+
+    #[test]
     fn request_from_utau_uses_oto_fallback() {
         let params = UtauParams {
             pitch: "C4".into(),
@@ -787,6 +892,7 @@ mod tests {
         cfg.models_dir = std::env::temp_dir().join("nr-pipeline-no-models");
         let engine = Engine::new(cfg).unwrap();
         assert_eq!(engine.backend_name(), "stub");
+        assert!(engine.is_stub());
 
         let req = RenderRequest {
             input: input.clone(),

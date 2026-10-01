@@ -42,6 +42,8 @@ cargo build --release
 # 2. 准备模型（见 models/README.md）
 bash scripts/download_models.sh          # Windows: scripts/download_models.ps1
                                          # 或手动把 ONNX 放进 models/
+# 下载完成后脚本会自动把 NR_MODELS_DIR 写入用户级环境变量
+# （NR_SKIP_ENV=1 跳过）；使用该方案期间请勿移动 models 目录
 
 # 3. 自检：生成测试音并跑通整条管线
 ./target/release/resampler selftest
@@ -184,7 +186,11 @@ neural-resampler-x86_64-unknown-linux-gnu/
 
 模型未放入仓库，CI 与空白环境请用 `scripts/download_models.sh`
 （Windows: `scripts/download_models.ps1`）获取。脚本在 GitHub 直连不可达
-或低于 100KB/s 时自动走 gh-proxy 镜像（可用 `NR_MODEL_MIRROR` 强制指定），下载后做 SHA-256 校验。
+或低于 100KB/s 时自动走 gh-proxy 镜像（可用 `NR_MODEL_MIRROR` 强制指定），下载后做 SHA-256 校验，
+并自动把 `NR_MODELS_DIR` 写入用户级环境变量——此后 resampler 即使被复制进
+编辑器目录（如 OpenUtau 的 `Resamplers/`）也能找到模型（⚠ 使用期间勿移动 models
+目录；`NR_SKIP_ENV=1` 跳过自动设置）。模型缺失时渲染会显式报错（三语，含解决
+方法），`--allow-stub` / `NR_ALLOW_STUB=1` 可豁免（仅限离线自测）。
 
 ## 测试与 CI
 

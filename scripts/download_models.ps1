@@ -20,6 +20,12 @@
 # 提示语言：NR_MODEL_LANG=zh|ja|en|all 可强制指定；否则按系统 UI 语言
 # 选择简体中文 / 日本語 / English；检测不到或系统语言不属于三者时，三语同时显示。
 #
+# 环境变量（推荐保持开启）：两个模型下载并校验通过后，自动把
+# NR_MODELS_DIR=<本目录>\models 写入用户级环境变量——这样 resampler.exe
+# 即使被单独复制进编辑器目录（如 OpenUtau 的 Resamplers\）也能找到模型。
+# 注意：使用此方案期间不要移动/重命名 models 目录（详见脚本输出的说明）。
+# 设 NR_SKIP_ENV=1 可跳过。
+#
 # 模型来源于第三方仓库，许可遵循各自发布页要求。
 
 param([string]$DestDir)
@@ -182,6 +188,34 @@ function Get-Msg {
             $en = "Run 'resampler info' to confirm the engine can load the models."
             $ja = "「resampler info」でモデルを読み込めるか確認できます。"
             $zh = "用 'resampler info' 确认引擎能否加载模型。" }
+        'env_skip' {
+            $en = "NR_SKIP_ENV=1 set - skipping automatic NR_MODELS_DIR setup."
+            $ja = "NR_SKIP_ENV=1 が設定されているため NR_MODELS_DIR の自動設定をスキップ。"
+            $zh = "已设置 NR_SKIP_ENV=1，跳过 NR_MODELS_DIR 自动设置。" }
+        'env_already' {
+            $en = "✓ User environment variable NR_MODELS_DIR is already set to the same value: $($A[0])"
+            $ja = "✓ ユーザー環境変数 NR_MODELS_DIR は既に同じ値です: $($A[0])"
+            $zh = "✓ 用户环境变量 NR_MODELS_DIR 已是相同值：$($A[0])" }
+        'env_updated' {
+            $en = "Updating NR_MODELS_DIR: $($A[1]) -> $($A[0])"
+            $ja = "NR_MODELS_DIR を更新: $($A[1]) -> $($A[0])"
+            $zh = "更新 NR_MODELS_DIR：$($A[1]) → $($A[0])" }
+        'env_set_win' {
+            $en = "✓ Set NR_MODELS_DIR = $($A[0]) (user-level). Restart OpenUtau (or any process started after this) will pick it up."
+            $ja = "✓ NR_MODELS_DIR = $($A[0]) をユーザー環境変数に設定。OpenUtau を再起動（または今後起動するプロセス）で有効。"
+            $zh = "✓ 已将 NR_MODELS_DIR = $($A[0]) 写入用户级环境变量。重启 OpenUtau（或此后新启动的进程）即可生效。" }
+        'env_dont_move' {
+            $en = "⚠ IMPORTANT: while using NR_MODELS_DIR, do NOT move or rename the models directory ($($A[0])). If you move it, rerun this script or update NR_MODELS_DIR, otherwise the resampler cannot find the models."
+            $ja = "⚠ 重要：NR_MODELS_DIR を使用する間、models ディレクトリ（$($A[0])）を移動・リネームしないでください。移動した場合は本スクリプトを再実行するか NR_MODELS_DIR を更新してください。"
+            $zh = "⚠ 重要：使用 NR_MODELS_DIR 方案期间，请勿移动或重命名 models 目录（$($A[0])）。若移动了，请重跑本脚本或更新 NR_MODELS_DIR，否则重采样器将找不到模型。" }
+        'env_undo_win' {
+            $en = "To undo: remove NR_MODELS_DIR in Settings > System > Advanced system settings > Environment Variables (or run [Environment]::SetEnvironmentVariable('NR_MODELS_DIR', `$null, 'User'))."
+            $ja = "元に戻す：設定 > システム > 詳細情報 > システムの詳細設定 > 環境変数 で NR_MODELS_DIR を削除（または [Environment]::SetEnvironmentVariable('NR_MODELS_DIR', `$null, 'User') を実行）。"
+            $zh = "撤销方法：在 设置 > 系统 > 高级系统设置 > 环境变量 中删除 NR_MODELS_DIR（或运行 [Environment]::SetEnvironmentVariable('NR_MODELS_DIR', `$null, 'User')）。" }
+        'env_unsupported' {
+            $en = "Automatic environment setup is not supported on this OS. Please set NR_MODELS_DIR=$($A[0]) manually."
+            $ja = "この OS では環境変数の自動設定に対応していません。NR_MODELS_DIR=$($A[0]) を手動で設定してください。"
+            $zh = "本系统不支持自动设置环境变量，请手动设置 NR_MODELS_DIR=$($A[0])。" }
     }
     switch ($Script:UILang) {
         'en' { return $en }
@@ -389,6 +423,39 @@ if ($Script:MirrorExplicit) {
 
 if (-not (Fetch-Model -Url $Script:FcpeUrl -OutFile (Join-Path $DestDir 'fcpe.onnx') -Name 'FCPE' -Expected $Script:FcpeSha256)) { exit 1 }
 if (-not (Fetch-Model -Url $Script:VocoderUrl -OutFile (Join-Path $DestDir 'pc_nsf_hifigan.onnx') -Name 'PC-NSF-HiFiGAN' -Expected $Script:VocoderSha256)) { exit 1 }
+
+# ---- 模型就绪后：自动把 NR_MODELS_DIR 写入用户级环境变量 ----
+#
+# 目的：OpenUtau 会把 resampler.exe 单独复制进 Resamplers\ 目录，
+# exe 同级没有 models\。设置 NR_MODELS_DIR 后，无论 exe 被复制/移动到哪，
+# 都能找到本目录下的模型。NR_SKIP_ENV=1 可跳过。
+function Set-NrModelsEnv {
+    if ($env:NR_SKIP_ENV -eq '1') {
+        Write-Msg 'env_skip'
+        return
+    }
+    $modelsAbs = (Resolve-Path -LiteralPath $DestDir).Path
+    # PS5.1 没有 $IsWindows 自动变量（必然在 Windows）；pwsh 7 才有
+    $onWindows = if ($null -ne $IsWindows) { $IsWindows } else { $true }
+    if (-not $onWindows) {
+        Write-Msg 'env_unsupported' @($modelsAbs)
+        return
+    }
+    $cur = [Environment]::GetEnvironmentVariable('NR_MODELS_DIR', 'User')
+    if ($cur -eq $modelsAbs) {
+        Write-Msg 'env_already' @($modelsAbs)
+    } elseif ($cur) {
+        Write-Msg 'env_updated' @($modelsAbs, $cur)
+    }
+    [Environment]::SetEnvironmentVariable('NR_MODELS_DIR', $modelsAbs, 'User')
+    $env:NR_MODELS_DIR = $modelsAbs    # 当前会话立即可用
+    Write-Msg 'env_set_win' @($modelsAbs)
+    Write-Host ''
+    Write-Msg 'env_dont_move' @($modelsAbs)
+    Write-Msg 'env_undo_win'
+}
+
+Set-NrModelsEnv
 
 Write-Host ''
 Write-Msg 'models_dir' @((Resolve-Path -LiteralPath $DestDir).Path)

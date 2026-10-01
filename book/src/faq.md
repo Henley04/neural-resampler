@@ -12,16 +12,24 @@
 
 ### 没有模型能跑吗？
 
-能跑，但没有实用价值。缺模型时声码器会退化成 Stub、F0 退化为内置 DSP，
-管线仍然走通、也有声音，但音质不可用。这个降级是为了方便验证连通性，
-不是为了实际使用。`./resampler info` 会明确告诉你当前用的什么后端。
+分场景。`resampler selftest` 与 `resampler info` 不受影响，可以验证管线连通性；
+但 `render` / `batch` / UTAU 协议渲染在模型缺失时会**直接报错退出**（三语提示，
+含解决方法），不会输出音质不可用的音频。离线自测确需降级运行时，加
+`--allow-stub` 或设 `NR_ALLOW_STUB=1`。
 
-### 在 OpenUtau 里渲染，音质不对（像降级了）？
+### 在 OpenUtau 里渲染报错「声码器模型缺失」？
 
-OpenUtau 安装 resampler 时把 exe **复制**进自己的 `Resamplers/` 目录，渲染时的
-工作目录下没有 `models/`，引擎会静默降级（能出声但不报错）。解决：把模型放到
-`Resamplers/models/`，或设置环境变量 `NR_MODELS_DIR` 指向模型目录。然后用
-`resampler info` 确认声码器后端显示 `onnxruntime` 而不是 `stub`。
+OpenUtau 安装 resampler 时把 exe **复制**进自己的 `Resamplers/` 目录，模型不会
+跟着走。v0.1.3 起，这种情况不再是静默降级（以前能出声但音质糊），而是渲染失败
+并弹出三语错误说明；resampler 旁边还会生成 `MODEL-MISSING-READ-ME.txt`。
+解决（二选一）：
+
+1. **推荐**：在发布包目录运行一次 `download_models.sh` / `download_models.ps1`——
+   脚本会自动把 `NR_MODELS_DIR` 写入用户级环境变量（此后 exe 放哪都行；
+   注意使用期间不要移动 models 目录）
+2. 或把 `models/` 复制为 `Resamplers/models/`（与 exe 同级）
+
+然后用 `resampler info` 确认声码器后端显示 `onnxruntime` 而不是 `stub`。
 
 ### 为什么第一次渲染很慢？
 

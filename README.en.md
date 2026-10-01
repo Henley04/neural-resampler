@@ -42,6 +42,8 @@ cargo build --release
 # 2. 准备模型（见 models/README.md）
 bash scripts/download_models.sh          # Windows: scripts/download_models.ps1
                                          # 或手动把 ONNX 放进 models/
+# After download the script automatically writes NR_MODELS_DIR into your
+# user environment (NR_SKIP_ENV=1 to skip); do not move the models dir while using it
 
 # 3. 自检：生成测试音并跑通整条管线
 ./target/release/resampler selftest
@@ -184,7 +186,11 @@ neural-resampler-x86_64-unknown-linux-gnu/
 
 Models are not committed to the repository; in CI and blank environments, fetch them with `scripts/download_models.sh`
 (Windows: `scripts/download_models.ps1`). The script automatically falls back to the gh-proxy mirror when GitHub direct connection
-is unreachable or slower than 100KB/s (force one via `NR_MODEL_MIRROR`), and verifies SHA-256 after download.
+is unreachable or slower than 100KB/s (force one via `NR_MODEL_MIRROR`), verifies SHA-256 after download, and automatically writes
+`NR_MODELS_DIR` into your user environment — the resampler then finds the models even when copied into the editor's own folder
+(e.g. OpenUtau's `Resamplers/`) (⚠ do not move the models directory while using this method; `NR_SKIP_ENV=1` skips the setup).
+When models are missing, rendering fails with an explicit trilingual error (including the fix); pass `--allow-stub` or set
+`NR_ALLOW_STUB=1` to allow the degraded backend (offline testing only).
 
 ## Testing & CI
 
