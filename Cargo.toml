@@ -1,6 +1,6 @@
 [package]
 name = "neural-resampler"
-version = "0.1.4"
+version = "0.1.5"
 edition = "2021"
 rust-version = "1.77"
 description = "通用神经重采样器引擎：纯 Rust + ONNX 重写的 HiFiSampler（FCPE F0 + PC-NSF-HiFiGAN 声码器）"
