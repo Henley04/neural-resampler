@@ -47,7 +47,7 @@ By default the scripts connect directly to GitHub (`raw.githubusercontent.com`) 
    ([gh-proxy](https://github.com/hunshcn/gh-proxy) format: prefix + full original URL):
 
    ```bash
-   NR_MODEL_MIRROR=https://ghfast.top/ ./download_models.sh
+   NR_MODEL_MIRROR=https://gh-proxy.com/ ./download_models.sh
    ```
 
    You can also swap in any self-hosted or other gh-proxy instance.

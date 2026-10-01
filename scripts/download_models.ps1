@@ -9,7 +9,7 @@
 #
 # 下载源策略（与 bash 版 download_models.sh 逻辑一致）：
 #   1. 设置 NR_MODEL_MIRROR 时直接使用该镜像前缀
-#      （gh-proxy 格式：镜像前缀 + 完整原始 URL，如 https://ghfast.top/https://raw...）
+#      （gh-proxy 格式：镜像前缀 + 完整原始 URL，如 https://gh-proxy.com/https://raw...）
 #   2. 否则先探测 GitHub 直连；不可达时自动切换 gh-proxy 镜像并提示
 #   3. 下载中平均速度低于 100KB/s 持续 10 秒：
 #      当前为直连时询问是否切换镜像（NR_MODEL_AUTO_SWITCH=1 免询问自动切换，
@@ -52,7 +52,7 @@ New-Item -ItemType Directory -Force -Path $DestDir | Out-Null
 $Script:MirrorExplicit = $env:NR_MODEL_MIRROR
 $Script:SkipChecksum = $env:NR_MODEL_SKIP_CHECKSUM
 $Script:AutoSwitch = $env:NR_MODEL_AUTO_SWITCH
-$Script:DefaultMirror = 'https://ghfast.top/'    # gh-proxy 生态实例，可用 NR_MODEL_MIRROR 覆盖
+$Script:DefaultMirror = 'https://gh-proxy.com/'    # gh-proxy 开源项目官方实例（hunshcn/gh-proxy），可用 NR_MODEL_MIRROR 覆盖
 $Script:MinSpeed = 102400                        # 100 KB/s
 $Script:SlowSeconds = 10                         # 平均速度持续低于阈值的判定时长
 

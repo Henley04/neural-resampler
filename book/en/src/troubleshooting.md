@@ -12,7 +12,7 @@ information, while the command line gives you the specific cause:
 | Symptom | Possible cause | Fix |
 | --- | --- | --- |
 | Models show `[缺失]` in `info` | Models not placed in `models/` | Run `./download_models.sh` (Windows: `.\download_models.ps1`), or point `--models` at the actual directory |
-| Downloading models is slow or fails | Poor direct connectivity to GitHub | The script switches to a gh-proxy mirror automatically; you can also force the mirror with `NR_MODEL_MIRROR=https://ghfast.top/` |
+| Downloading models is slow or fails | Poor direct connectivity to GitHub | The script switches to a gh-proxy mirror automatically; you can also force the mirror with `NR_MODEL_MIRROR=https://gh-proxy.com/` |
 | Vocoder backend is `stub` | Same as above | Same as above. **The Stub is for connectivity checks only; the quality is unusable** |
 | F0 backend is `world-dio` | `fcpe.onnx` missing | Works fine, just slightly less stable for singing; add the model if you want FCPE |
 | Output length is clearly wrong | `length` is in **milliseconds** | Pass `1000` for one second, not `44100` |

@@ -47,7 +47,7 @@ powershell -ExecutionPolicy Bypass -File .\download_models.ps1    # Windows Powe
    （[gh-proxy](https://github.com/hunshcn/gh-proxy) 格式：前缀 + 完整原始 URL）：
 
    ```bash
-   NR_MODEL_MIRROR=https://ghfast.top/ ./download_models.sh
+   NR_MODEL_MIRROR=https://gh-proxy.com/ ./download_models.sh
    ```
 
    也可换成任意自部署或其他 gh-proxy 实例。

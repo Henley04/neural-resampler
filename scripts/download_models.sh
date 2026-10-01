@@ -10,7 +10,7 @@
 #
 # 下载源策略（PowerShell 版 download_models.ps1 逻辑一致）：
 #   1. 设置 NR_MODEL_MIRROR 时直接使用该镜像前缀
-#      （gh-proxy 格式：镜像前缀 + 完整原始 URL，如 https://ghfast.top/https://raw...）
+#      （gh-proxy 格式：镜像前缀 + 完整原始 URL，如 https://gh-proxy.com/https://raw...）
 #   2. 否则先探测 GitHub 直连；不可达时自动切换 gh-proxy 镜像并提示
 #   3. 下载中平均速度低于 100KB/s 持续 10 秒：
 #      当前为直连时询问是否切换镜像（NR_MODEL_AUTO_SWITCH=1 免询问自动切换，
@@ -44,7 +44,7 @@ mkdir -p "$DEST"
 MIRROR_EXPLICIT="${NR_MODEL_MIRROR:-}"
 SKIP_CHECKSUM="${NR_MODEL_SKIP_CHECKSUM:-0}"
 AUTO_SWITCH="${NR_MODEL_AUTO_SWITCH:-0}"
-DEFAULT_MIRROR="https://ghfast.top/"    # gh-proxy 生态实例，可用 NR_MODEL_MIRROR 覆盖
+DEFAULT_MIRROR="https://gh-proxy.com/"    # gh-proxy 开源项目官方实例（hunshcn/gh-proxy），可用 NR_MODEL_MIRROR 覆盖
 MIN_SPEED=102400                        # 100 KB/s
 SLOW_SECONDS=10                         # 平均速度持续低于阈值的判定时长
 
