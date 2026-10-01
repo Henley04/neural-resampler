@@ -1,0 +1,1088 @@
+<!DOCTYPE HTML>
+<html lang="ja" class="rust sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>neural-resampler ドキュメント</title>
+        <meta name="robots" content="noindex">
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="汎用ニューラルリサンプラーエンジン使用ドキュメント：HiFiSampler の純 Rust + ONNX 再実装">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="favicon-8114d1fc.png">
+        <link rel="stylesheet" href="css/variables-8adf115d.css">
+        <link rel="stylesheet" href="css/general-e96d0476.css">
+        <link rel="stylesheet" href="css/chrome-d279d366.css">
+        <link rel="stylesheet" href="css/print-9e4910d8.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="fonts/fonts-9644e21d.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="mdbook-highlight-css" href="highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="ayu-highlight-3fdfc3ac.css">
+
+        <!-- Custom theme stylesheets -->
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "";
+            const default_light_theme = "rust";
+            const default_dark_theme = "coal";
+            window.path_to_searchindex_js = "searchindex-f3804649.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="toc-84d95cbf.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="mdbook-body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('rust')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="mdbook-sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("mdbook-sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="mdbook-sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+            </noscript>
+            <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="mdbook-page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <div id="mdbook-menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg></span>
+                        </label>
+                        <button id="mdbook-theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="mdbook-theme-list">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M371.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L600.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S549.7-4.4 531.1 9.6L294.4 187.2c-24 18-38.2 46.1-38.4 76.1L371.3 367.1zm-19.6 25.4l-116-104.4C175.9 290.3 128 339.6 128 400c0 3.9 .2 7.8 .6 11.6c1.8 17.5-10.2 36.4-27.8 36.4H96c-17.7 0-32 14.3-32 32s14.3 32 32 32H240c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg></span>
+                        </button>
+                        <ul id="mdbook-theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-ayu">Ayu</button></li>
+                        </ul>
+                        <button id="mdbook-search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="mdbook-searchbar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/></svg></span>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">neural-resampler ドキュメント</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
+                        </a>
+                        <a href="https://github.com/Henley04/neural-resampler" title="Git repository" aria-label="Git repository">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg></span>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="mdbook-search-wrapper" class="hidden">
+                    <form id="mdbook-searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="mdbook-searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="mdbook-searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <span class=fa-svg id="fa-spin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M304 48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zm0 416c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM48 304c26.5 0 48-21.5 48-48s-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48zm464-48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM142.9 437c18.7-18.7 18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zm0-294.2c18.7-18.7 18.7-49.1 0-67.9S93.7 56.2 75 75s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zM369.1 437c18.7 18.7 49.1 18.7 67.9 0s18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9z"/></svg></span>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="mdbook-searchresults-outer" class="searchresults-outer hidden">
+                        <div id="mdbook-searchresults-header" class="searchresults-header"></div>
+                        <ul id="mdbook-searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('mdbook-sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('mdbook-sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#mdbook-sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="mdbook-content" class="content">
+                    <main>
+                        <h1 id="はじめに"><a class="header" href="#はじめに">はじめに</a></h1>
+<p><strong>neural-resampler</strong> は、HiFiSampler を<strong>純 Rust + ONNX</strong> で書き直した汎用の
+ニューラルリサンプラーエンジンです。</p>
+<p>従来の UTAU 音源（ボイスバンク）は、録音サンプル（WAV）と各サンプルの切り出し
+パラメータ（<code>oto.ini</code>）の 2 つで構成されます。ピッチを変え、長さを変え、断片を
+つなぎ合わせて歌声にする役割を担うのがリサンプラーエンジンです。本プロジェクトの
+目標はただ 1 つ：<strong>このエンジンだけを置き換え、そのほかは一切変更しない</strong>ことです。</p>
+<h2 id="設計上のトレードオフ"><a class="header" href="#設計上のトレードオフ">設計上のトレードオフ</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>項目</th><th>説明</th></tr>
+</thead>
+<tbody>
+<tr><td>音源の互換性</td><td>WAV と <code>oto.ini</code> は一切変更せず、そのまま流用</td></tr>
+<tr><td>ボコーダ</td><td>PC-NSF-HiFiGAN（NSF アーキテクチャ、F0 条件付け）</td></tr>
+<tr><td>F0 抽出</td><td>FCPE（ONNX、16kHz）、内蔵 DSP へのフォールバック可</td></tr>
+<tr><td>依存関係</td><td>Python ランタイム不要、シングルバイナリで配布</td></tr>
+<tr><td>ホスト互換</td><td>OpenUtau / ネイティブ UTAU、プロトコル層は拡張可能</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="ピッチ変更と長さ変更の仕組み"><a class="header" href="#ピッチ変更と長さ変更の仕組み">ピッチ変更と長さ変更の仕組み</a></h2>
+<p>ニューラル方式の巧みな点は、2 つの処理を<strong>分離</strong>したことです：</p>
+<ul>
+<li><strong>ピッチ変更</strong> —— F0 曲線を直接変更します。ボコーダは F0 を条件とするため、
+F0 を変えれば異なるピッチが得られ、波形のリサンプリングは不要です。そのため
+従来のリサンプリング特有の金属音が発生しません。</li>
+<li><strong>長さ変更</strong> —— メルスペクトログラムを時間軸方向に伸縮／ループ結合します。
+変わるのはフレーム数だけで、ピッチとは無関係です。</li>
+</ul>
+<p>つまり 1 つのサンプルを任意の長さに引き伸ばし、任意のピッチで歌わせることが
+でき、両者は互いに干渉しません。</p>
+<h2 id="処理フロー"><a class="header" href="#処理フロー">処理フロー</a></h2>
+<pre><code>输入 WAV
+   │
+   ├─ Mel 分析（44.1kHz / 2048 FFT / 帧移 128）
+   │
+   ├─ F0 提取（FCPE，16kHz）  ──┐
+   │                             ├─→ 按乐谱调整 F0
+   ├─ 乐谱：音名 + pitchBend ────┘
+   │
+   ├─ Mel 时序拉伸到目标帧数
+   │
+   ├─ PC-NSF-HiFiGAN 声码器（Mel + F0 → 波形）
+   │
+   └─ 后处理（响度归一化、限幅、淡入淡出）→ 输出 WAV
+</code></pre>
+<h2 id="どんなときに向いているか"><a class="header" href="#どんなときに向いているか">どんなときに向いているか</a></h2>
+<p><strong>向いているケース</strong>：従来の音源に、より自然な音質を持たせたい場合。Python 環境の
+ないマシンにデプロイしたい場合。読めて、改変でき、ほかのツールに組み込める Rust
+実装が欲しい場合。</p>
+<p><strong>向いていないケース</strong>：存在しない音素を無から生成することを期待する場合
+（あくまで結合合成であり、つなぎ方がより自然になるだけです）。GPU 加速が必要なのに
+CUDA/DirectML をインストールしたくない場合（デフォルトは CPU 動作で、使えますが
+遅いです）。</p>
+<h2 id="ライセンス"><a class="header" href="#ライセンス">ライセンス</a></h2>
+<p>MIT。使用するモデルはそれぞれの配布元のライセンスに従います。配布の前に
+ご自身でご確認ください。</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="インストール"><a class="header" href="#インストール">インストール</a></h1>
+<h2 id="方法-1ビルド済みバイナリのダウンロード推奨"><a class="header" href="#方法-1ビルド済みバイナリのダウンロード推奨">方法 1：ビルド済みバイナリのダウンロード（推奨）</a></h2>
+<p><a href="https://github.com/Henley04/neural-resampler/releases">Releases ページ</a> から、
+お使いのプラットフォーム向けのアーカイブをダウンロードしてください。</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>プラットフォーム</th><th>ファイル</th></tr>
+</thead>
+<tbody>
+<tr><td>Linux x86_64</td><td><code>neural-resampler-&lt;ver&gt;-linux-x86_64.tar.gz</code></td></tr>
+<tr><td>macOS Apple Silicon</td><td><code>neural-resampler-&lt;ver&gt;-macos-aarch64.tar.gz</code></td></tr>
+<tr><td>Windows x86_64</td><td><code>neural-resampler-&lt;ver&gt;-windows-x86_64.zip</code></td></tr>
+</tbody>
+</table>
+</div>
+<p>ビルド済みバイナリがまだ提供されていないプラットフォーム（macOS Intel、
+Linux ARM64 など）では、ご自身で <code>cargo build --release</code> を実行してください。
+成果物は <code>target/release/resampler</code> に生成されます。</p>
+<p>各アーカイブには同名の <code>.sha256</code> チェックサムファイルが付属しており、
+ダウンロード後に確認できます：</p>
+<pre><code class="language-bash">shasum -a 256 -c neural-resampler-0.1.0-linux-x86_64.tar.gz.sha256
+# Windows (PowerShell):
+# (Get-FileHash -Algorithm SHA256 .\xxx.zip).Hash
+</code></pre>
+<p>展開後のディレクトリ構成：</p>
+<pre><code>neural-resampler-0.1.0-linux-x86_64/
+├── resampler              # 主程序（Windows 为 resampler.exe）
+├── config.resampler.yaml  # 默认配置，可直接改后用 --config 指定
+├── download_models.sh     # 模型下载脚本（Linux/macOS）
+├── download_models.ps1    # 模型下载脚本（Windows PowerShell）
+├── models/                # 模型放置目录（初始为空）
+├── docs/                  # 架构与模型说明
+└── README.md LICENSE
+</code></pre>
+<blockquote>
+<p><strong>アーカイブに ONNX モデルは含まれません。</strong> モデルは約 100 MB あり、それぞれの
+配布元ライセンスの制約を受けるため、リポジトリには同梱されていません。展開後に
+<code>./download_models.sh</code>（Windows は <code>.\download_models.ps1</code>）を実行して取得して
+ください。詳細は<a href="#モデルの入手">モデルの取得</a>を参照してください。</p>
+</blockquote>
+<h2 id="方法-2ソースからビルド"><a class="header" href="#方法-2ソースからビルド">方法 2：ソースからビルド</a></h2>
+<p>Rust の安定版ツールチェーン（1.70+）が必要です。初回ビルド時に ONNX Runtime の
+ビルド済みライブラリが自動でダウンロードされます。</p>
+<pre><code class="language-bash">git clone https://github.com/Henley04/neural-resampler.git
+cd neural-resampler
+cargo build --release
+# 产物：target/release/resampler
+</code></pre>
+<p>オプションの feature（GPU 加速）：</p>
+<pre><code class="language-bash">cargo build --release --features cuda      # NVIDIA CUDA
+cargo build --release --features directml  # Windows DirectML
+cargo build --release --features coreml    # macOS CoreML
+</code></pre>
+<blockquote>
+<p>⚠️ GPU 用 feature は<strong>相互排他</strong>です。複数を同時に有効化しないでください。また
+<code>--all-features</code> も使用しないでください。組み合わせた feature セットに一致する
+ビルド済みライブラリを ort が見つけられず、リンクに失敗します。</p>
+</blockquote>
+<h2 id="方法-3独自の配布物をパッケージする"><a class="header" href="#方法-3独自の配布物をパッケージする">方法 3：独自の配布物をパッケージする</a></h2>
+<pre><code class="language-bash">bash scripts/build_release.sh                 # 输出到 dist/
+bash scripts/build_release.sh --features cuda
+</code></pre>
+<p>スクリプトはバイナリ・デフォルト設定・ドキュメントをパッケージ化し、ローカルに
+モデルが存在する場合はそれも同梱します。</p>
+<h2 id="インストールの確認"><a class="header" href="#インストールの確認">インストールの確認</a></h2>
+<pre><code class="language-bash">./resampler info        # 查看构建信息、配置指纹与模型状态
+./resampler selftest    # 生成测试音并端到端跑一遍
+</code></pre>
+<p><code>info</code> の出力で、ボコーダと FCPE の両方に <code>[已就绪]</code>（準備完了）と表示されて
+初めて実際に使用可能です。<code>[缺失]</code>（欠落）と表示されている場合はエンジンが
+フォールバックします。詳細は<a href="#トラブルシューティング">トラブルシューティング</a>を
+参照してください。</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="モデルの入手"><a class="header" href="#モデルの入手">モデルの入手</a></h1>
+<p>エンジンが実用レベルの音質を出すには ONNX モデルが必要です。<strong>モデルはリポジトリやリリース成果物には同梱されていません</strong>——合計で約 100 MB になり、
+それぞれの出所のライセンスが再配布を許可しているとは限らないため、各自で入手してください。</p>
+<h2 id="配置場所"><a class="header" href="#配置場所">配置場所</a></h2>
+<p>モデルは実行ファイルと<strong>同じ階層または指定した</strong> <code>models/</code> ディレクトリに置きます：</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>ファイル</th><th>役割</th><th>必須</th></tr>
+</thead>
+<tbody>
+<tr><td><code>pc_nsf_hifigan.onnx</code></td><td>ボコーダ：Mel + F0 → 波形</td><td><strong>はい</strong></td></tr>
+<tr><td><code>fcpe.onnx</code></td><td>F0 抽出（16kHz）</td><td>いいえ、欠落時は内蔵 DSP にフォールバック</td></tr>
+<tr><td><code>hnsep.onnx</code></td><td>HN-SEP の調波/非調波分離</td><td>いいえ</td></tr>
+</tbody>
+</table>
+</div>
+<p><code>--models &lt;DIR&gt;</code> で一時的に別のディレクトリを指定できます：</p>
+<pre><code class="language-bash">./resampler --models /path/to/models info
+</code></pre>
+<h2 id="ワンコマンドでのダウンロード"><a class="header" href="#ワンコマンドでのダウンロード">ワンコマンドでのダウンロード</a></h2>
+<p>リリース成果物にはダウンロードスクリプトが同梱されています（bash と PowerShell の 2 種類、処理内容は同じ）：</p>
+<pre><code class="language-bash">./download_models.sh      # Linux / macOS / Git Bash
+</code></pre>
+<pre><code class="language-powershell">powershell -ExecutionPolicy Bypass -File .\download_models.ps1    # Windows PowerShell
+</code></pre>
+<p>リポジトリ内にもあります（<code>scripts/download_models.sh</code> と <code>scripts/download_models.ps1</code>）。
+スクリプトは自動リトライに対応し、ダウンロード後に <strong>SHA-256 検証</strong>を行います
+（基準は v0.1.0 とともに検証済みのバージョン）。ファイルが破損している、または上流で差し替えられていた場合はインストールを拒否して通知します。</p>
+<h3 id="ダウンロード元とミラー高速化"><a class="header" href="#ダウンロード元とミラー高速化">ダウンロード元とミラー高速化</a></h3>
+<p>スクリプトはデフォルトで GitHub に直接接続し（<code>raw.githubusercontent.com</code>）、gh-proxy ミラーによる高速化を内蔵しています：</p>
+<ol>
+<li>
+<p><strong>自動検出</strong>：GitHub への直接接続が不通な場合、自動的にミラーへ切り替えて通知します</p>
+</li>
+<li>
+<p><strong>低速時の切り替え</strong>：平均ダウンロード速度が 10 秒間 100KB/s 未満で、現在 direct 接続のときは
+ミラーへ切り替えるか尋ねます（<code>NR_MODEL_AUTO_SWITCH=1</code> なら尋ねずに自動切り替えします）；
+direct 接続のリトライを使い切った後も、最後の 1 回は自動的にミラーを使います</p>
+</li>
+<li>
+<p><strong>ミラーの強制</strong>：<code>NR_MODEL_MIRROR</code> を設定すると、指定したミラープレフィックスを直接使います
+（<a href="https://github.com/hunshcn/gh-proxy">gh-proxy</a> 形式：プレフィックス + 完全な元 URL）：</p>
+<pre><code class="language-bash">NR_MODEL_MIRROR=https://gh-proxy.com/ ./download_models.sh
+</code></pre>
+<p>自前デプロイや他の gh-proxy インスタンスに差し替えることもできます。</p>
+</li>
+</ol>
+<blockquote>
+<p>上流のモデル更新で検証が通らなくなった場合は、新しいバージョンが使えることを確認したうえで
+<code>NR_MODEL_SKIP_CHECKSUM=1</code> を設定して一時的に検証をスキップできます——<strong>出所が信頼できることを確認してから行ってください</strong>
+（ミラーの内容が改ざんされていても検証で捕捉されます）。</p>
+</blockquote>
+<h2 id="手動での入手"><a class="header" href="#手動での入手">手動での入手</a></h2>
+<p>スクリプトが使えない場合は手動でダウンロードし、上の表のファイル名にリネームして <code>models/</code> に置きます：</p>
+<ol>
+<li><strong>FCPE</strong> —— <a href="https://github.com/CNChTu/FCPE">CNChTu/FCPE</a> のリリースページから <code>fcpe.onnx</code> を取得</li>
+<li><strong>PC-NSF-HiFiGAN</strong> —— ONNX 形式が必要です。手元に <code>.ckpt</code> 重みしかない場合は、
+リポジトリ内の変換スクリプトを使えます：
+<pre><code class="language-bash">python scripts/convert_vocoder_to_onnx.py --ckpt model.ckpt --out models/pc_nsf_hifigan.onnx
+</code></pre>
+</li>
+</ol>
+<h2 id="モデルの動作確認"><a class="header" href="#モデルの動作確認">モデルの動作確認</a></h2>
+<pre><code class="language-bash">./resampler info
+</code></pre>
+<p>次の 3 行に注目してください：</p>
+<pre><code>声码器  : "models/pc_nsf_hifigan.onnx"  [已就绪]
+FCPE    : "models/fcpe.onnx"  [已就绪]
+HN-SEP  : "models/hnsep.onnx"  [缺失]
+</code></pre>
+<ul>
+<li>ボコーダ <code>[缺失]</code> → Stub バックエンドにフォールバックし、<strong>音は出ますが音質は実用になりません</strong></li>
+<li>FCPE <code>[缺失]</code> → 内蔵 DSP による F0 抽出にフォールバックします。通常どおり動作しますが、歌声用途ではやや不安定になります</li>
+<li>HN-SEP <code>[缺失]</code> → 正常です。オプションの拡張機能です</li>
+</ul>
+<h2 id="ライセンス-1"><a class="header" href="#ライセンス-1">ライセンス</a></h2>
+<p>各モデルの出所であるリポジトリ/リリースページのライセンス条件に従ってください。モデルを独自の配布物に同梱する前に、
+必ずライセンスで許可されているか確認してください。</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="クイックスタート"><a class="header" href="#クイックスタート">クイックスタート</a></h1>
+<p><a href="#インストール">インストール</a>と<a href="#モデルの入手">モデルの取得</a>が済んでいるものとします。</p>
+<h2 id="ステップ-1セルフテスト"><a class="header" href="#ステップ-1セルフテスト">ステップ 1：セルフテスト</a></h2>
+<pre><code class="language-bash">./resampler selftest
+</code></pre>
+<p>このコマンドは 440Hz のテスト音を生成し、パイプライン全体をエンドツーエンドで
+実行して、最後に次の内容を表示します：</p>
+<pre><code>已生成测试输入: "target/selftest/selftest_input.wav"
+输出: "target/selftest/selftest_output.wav"（24696 样本 / 560.0ms / 峰值 0.254）
+自检通过
+</code></pre>
+<p><code>自检通过</code>（セルフテスト合格）と表示されればインストールは完了です。デフォルトの
+出力先は <code>target/selftest/</code> で、<code>--out-dir</code> で変更できます：</p>
+<pre><code class="language-bash">./resampler selftest --out-dir /tmp/nr-test
+</code></pre>
+<h2 id="ステップ-2バックエンドの状態を確認"><a class="header" href="#ステップ-2バックエンドの状態を確認">ステップ 2：バックエンドの状態を確認</a></h2>
+<pre><code class="language-bash">./resampler info
+</code></pre>
+<p>最後の 2 行に注目してください：</p>
+<pre><code>声码器后端: onnxruntime
+F0 后端    : fcpe-onnx
+</code></pre>
+<p><code>stub</code> / <code>world-dio</code> と表示されている場合はモデルが見つかっていないので、
+<a href="#モデルの入手">モデルの取得</a>に戻ってください。</p>
+<h2 id="ステップ-31-音レンダリングする"><a class="header" href="#ステップ-31-音レンダリングする">ステップ 3：1 音レンダリングする</a></h2>
+<pre><code class="language-bash">./resampler render voice/_a.wav out.wav A4
+</code></pre>
+<p>パスを 2 つ渡すだけでも実行でき、ほかの引数にはすべてデフォルト値
+（A4、ベロシティ 100、長さ 1000ms）が入ります。全引数を指定すると：</p>
+<pre><code class="language-bash">./resampler render voice/_a.wav out.wav A4 100 "g-3" 30 500 60 -50 100 0 '!120' AA
+</code></pre>
+<p>出力は次のようになります：</p>
+<pre><code>已写出 "out.wav"：87 帧 / 500.0ms / 后端 onnxruntime / F0 fcpe-onnx / 耗时 812.3ms
+</code></pre>
+<h2 id="ステップ-4エディタで使う"><a class="header" href="#ステップ-4エディタで使う">ステップ 4：エディタで使う</a></h2>
+<p>バイナリ自体がリサンプラーなので、UTAU プロトコルに従って直接呼び出せます：</p>
+<pre><code class="language-bash">resampler in.wav out.wav C4 100 "" 0 500 60 -50 100 0 !120 AA
+</code></pre>
+<p>エディタへの組み込み手順は<a href="#utau-で使う">UTAU で使う</a>または
+<a href="#openutau-で使う">OpenUtau で使う</a>を参照してください。</p>
+<h2 id="一括レンダリング"><a class="header" href="#一括レンダリング">一括レンダリング</a></h2>
+<p>複数組の UTAU パラメータを 1 つのファイルに 1 行ずつ書き込みます：</p>
+<pre><code class="language-text"># list.txt
+voice/_a.wav out/a.wav C4 100 "" 0 500 60 -50 100 0 !120 AA
+voice/_i.wav out/i.wav D4 100 "" 0 500 60 -50 100 0 !120 AA
+</code></pre>
+<pre><code class="language-bash">./resampler batch list.txt --jobs 4
+</code></pre>
+<p><code>#</code> で始まる行は無視されます。<code>--jobs 0</code> で並列度を自動決定します。</p>
+<h2 id="設定を変更する"><a class="header" href="#設定を変更する">設定を変更する</a></h2>
+<p>デフォルト設定を書き出し、必要に応じて編集してから <code>--config</code> で指定します：</p>
+<pre><code class="language-bash">./resampler config my.yaml
+# 编辑 my.yaml
+./resampler --config my.yaml render voice/_a.wav out.wav A4
+</code></pre>
+<p>詳細な設定項目は<a href="#設定ファイル">設定ファイル</a>を参照してください。</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="utau-で使う"><a class="header" href="#utau-で使う">UTAU で使う</a></h1>
+<p>バイナリ自体がリサンプラーであり、追加のラッパースクリプトは不要です。UTAU は
+決められた順序で引数を渡すので、そのまま直接呼び出せます：</p>
+<pre><code class="language-bash">resampler in.wav out.wav C4 100 "" 0 500 60 -50 100 0 !120 AA
+</code></pre>
+<h2 id="引数の意味"><a class="header" href="#引数の意味">引数の意味</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>#</th><th>引数</th><th>意味</th><th>単位 / デフォルト</th></tr>
+</thead>
+<tbody>
+<tr><td>1</td><td><code>in.wav</code></td><td>入力サンプルのパス</td><td>—</td></tr>
+<tr><td>2</td><td><code>out.wav</code></td><td>出力パス</td><td>—</td></tr>
+<tr><td>3</td><td><code>pitch</code></td><td>音名</td><td><code>C4</code></td></tr>
+<tr><td>4</td><td><code>velocity</code></td><td>ベロシティ</td><td>デフォルト <code>100</code></td></tr>
+<tr><td>5</td><td><code>flags</code></td><td>レンダリング フラグ</td><td>デフォルトは空</td></tr>
+<tr><td>6</td><td><code>offset</code></td><td>左ブランク</td><td><strong>ミリ秒</strong>、デフォルト <code>0</code></td></tr>
+<tr><td>7</td><td><code>length</code></td><td>要求する長さ</td><td><strong>ミリ秒</strong>、デフォルト <code>1000</code></td></tr>
+<tr><td>8</td><td><code>consonant</code></td><td>子音部</td><td><strong>ミリ秒</strong>、デフォルト <code>0</code></td></tr>
+<tr><td>9</td><td><code>cutoff</code></td><td>右側ブランク</td><td><strong>ミリ秒</strong>、多くの場合負、デフォルト <code>0</code></td></tr>
+<tr><td>10</td><td><code>volume</code></td><td>音量</td><td>パーセント、デフォルト <code>100</code></td></tr>
+<tr><td>11</td><td><code>modulation</code></td><td>モジュレーション</td><td>パーセント、デフォルト <code>0</code></td></tr>
+<tr><td>12</td><td><code>tempo</code></td><td>テンポ</td><td><code>!120</code> または <code>120</code></td></tr>
+<tr><td>13</td><td><code>pitchBend</code></td><td>ピッチ曲線</td><td>Base64+RLE エンコード、デフォルト <code>AA</code></td></tr>
+</tbody>
+</table>
+</div>
+<blockquote>
+<p>⚠️ <strong>第 7 引数 <code>length</code> の単位はミリ秒であってサンプル数ではありません。</strong>
+<code>44100</code> を渡すと 1 秒ではなく 44.1 秒の出力になります。最も引っかかりやすい
+落とし穴です。</p>
+</blockquote>
+<p><code>cutoff</code> が負になるのは正常です（右側の重なり領域を表します）。プログラムは負の
+引数を受け付けます。</p>
+<h2 id="対応しているフラグ"><a class="header" href="#対応しているフラグ">対応しているフラグ</a></h2>
+<p>フラグは <code>g-3P60HG20</code> のような形式で、長いフラグを優先して解釈されます
+（<code>/</code> 区切り文字は無視されます）。<strong>現在のバージョンで実際に効果があるのは
+以下のみ</strong>で、それ以外のフラグは解釈されますが出力には影響しません：</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>フラグ</th><th>意味</th><th>値</th></tr>
+</thead>
+<tbody>
+<tr><td><code>g</code></td><td>ジェンダー/音色シフト</td><td><code>g-3</code> は −3 を意味し、単位は約 1/100 半音。省略時は設定の <code>processing.gender</code> を使用</td></tr>
+<tr><td><code>t</code></td><td>ピッチの微調整</td><td>整数、デフォルト <code>0</code></td></tr>
+<tr><td><code>A</code></td><td>ピッチ変化に応じた振幅変調</td><td>整数、デフォルト <code>0</code>（オフ）</td></tr>
+<tr><td><code>P</code></td><td>ラウドネス正規化の強さ</td><td><code>P60</code> = 60%、デフォルト <code>100</code></td></tr>
+<tr><td><code>He</code></td><td>ループ結合の強制有効化</td><td>スイッチ型。記述すれば有効</td></tr>
+<tr><td><code>HG</code></td><td>growl（唸り）</td><td><code>HG20</code> = 20% の強さ</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="utau-での設定"><a class="header" href="#utau-での設定">UTAU での設定</a></h2>
+<ol>
+<li><code>resampler.exe</code> を固定のディレクトリに置きます（パスに<strong>空白や日本語文字を
+含めない</strong>でください。UTAU の互換性はあまり高くありません）</li>
+<li>UTAU を開く →「ツール」→「オプション」→「音源プラグイン / Resampler」</li>
+<li>「カスタム」を選択するか、設定画面にリサンプラーのフルパスを直接入力します</li>
+<li>確定して 1 音レンダリングし、試聴します</li>
+</ol>
+<p>UTAU が「resampler が応答しません」と表示したり出力が空になったりする場合は、
+まず同じ引数をコマンドラインから手動で 1 回実行し、プログラム自身のエラーを確認
+してください。ほとんどの問題はコマンドラインで一目でわかります。</p>
+<h2 id="ログとデバッグ"><a class="header" href="#ログとデバッグ">ログとデバッグ</a></h2>
+<p>UTAU から呼び出した場合はターミナル出力が見えないため、ログレベルを上げて
+ファイルにリダイレクトできます：</p>
+<pre><code class="language-bash">resampler --log-level debug in.wav out.wav C4 100 "" 0 500 60 -50 100 0 !120 AA 2&gt; debug.log
+</code></pre>
+<p><code>--log-format json</code> を指定すると構造化ログが出力され、スクリプトでの分析に
+便利です。</p>
+<h2 id="パフォーマンスのヒント"><a class="header" href="#パフォーマンスのヒント">パフォーマンスのヒント</a></h2>
+<p>サンプルの初回レンダリング時にはメルスペクトログラム解析と F0 抽出が行われ、
+その結果は同じディレクトリの <code>.nrc</code> ファイル（zstd 圧縮）としてキャッシュされ
+ます。同じ入力の 2 回目のレンダリングは明らかに速くなります。キャッシュキーには
+元ファイルのサイズ・更新時刻・設定のフィンガープリントが含まれるため、設定を
+変更すると自動的に無効化されて再構築されます。<strong>キャッシュを手動で削除する
+必要はありません</strong>。</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="openutau-で使う"><a class="header" href="#openutau-で使う">OpenUtau で使う</a></h1>
+<p>OpenUtau は <code>Resamplers</code> ディレクトリでサードパーティのリサンプラーを管理します。
+標準のリサンプラープロトコルに従って 13 個の引数が渡され、<a href="#utau-で使う">ネイティブ UTAU</a> と
+まったく同じなので、追加のパラメータテンプレートの設定は不要です。</p>
+<h2 id="設定手順"><a class="header" href="#設定手順">設定手順</a></h2>
+<p><a href="https://github.com/openutau/OpenUtau/wiki/Resamplers-and-Wavtools">OpenUtau 公式 wiki</a> に従います：</p>
+<ol>
+<li><code>resampler</code>（Windows は <code>resampler.exe</code>）を OpenUtau の <code>Resamplers</code> フォルダに入れます：
+<ul>
+<li>Windows：OpenUtau のプログラムディレクトリ下の <code>Resamplers</code></li>
+<li>Linux：<code>~/.local/share/OpenUtau/Resamplers</code></li>
+<li>実行ファイルを OpenUtau のメインウィンドウにドラッグし、<strong>「Install as resampler」</strong> を選ぶ方法もあります（0.1.119+）</li>
+</ul>
+</li>
+<li>レンダラーを <strong><code>CLASSIC</code></strong> に切り替えます</li>
+<li>レンダラーの横の <strong>⚙ 歯車アイコン</strong> をクリックし、Resampler ドロップダウンで本リサンプラーを選択します</li>
+<li>プロジェクトを再レンダリングします</li>
+</ol>
+<blockquote>
+<p>任意：<code>Resamplers</code> ディレクトリに実行ファイルと同名の <code>.yaml</code>（例：<code>resampler.yaml</code>）を
+Resampler Manifest として置くと、本エンジンが対応するフラグ（expression）を OpenUtau に
+宣言でき、expression パネルに推奨値と範囲が表示されます。</p>
+</blockquote>
+<h2 id="モデルの配置重要"><a class="header" href="#モデルの配置重要">モデルの配置（重要）</a></h2>
+<p>リサンプラーをインストールすると、OpenUtau は実行ファイルを自身の
+<code>Resamplers/</code> ディレクトリへ<strong>コピー</strong>します。レンダリング時の作業ディレクトリは
+OpenUtau のインストールルートであり、そこに <code>models/</code> は存在しません。モデルが
+欠落している場合、エンジンは<strong>もう静かに劣化しません</strong>：レンダリングは拒否され、
+OpenUtau に三言語のエラーダイアログ（対処法つき）が表示され、リサンプラー実行
+ファイルの隣に <code>MODEL-MISSING-READ-ME.txt</code> 警告ファイルが作成されます。</p>
+<p>モデルディレクトリは以下の順で解決されます：</p>
+<ol>
+<li>コマンドラインの <code>--models</code>（OpenUtau は渡さない。CLI 手動実行専用）</li>
+<li>環境変数 <code>NR_MODELS_DIR</code>（<strong>推奨</strong>：ダウンロードスクリプトが自動設定、下記参照）</li>
+<li>実行ファイルと<strong>同じ階層</strong>の <code>models/</code>（つまり <code>Resamplers/models/</code>）</li>
+<li>作業ディレクトリの <code>models/</code>（リリースパッケージ配置）</li>
+</ol>
+<p>OpenUtau では 2 か 3 を推奨します：</p>
+<ul>
+<li><strong>推奨</strong>：リリースパッケージのディレクトリで <code>download_models.sh</code> /
+<code>download_models.ps1</code> を一度実行してください。モデルのダウンロードと検証の後、
+スクリプトが自動的に <code>NR_MODELS_DIR</code> をユーザー環境変数に書き込みます
+（<code>NR_SKIP_ENV=1</code> でスキップ）。以降、リサンプラーがどこにコピーされても
+モデルを見つけられるため、exe を OpenUtau にドラッグするだけで他の設定は不要です。
+⚠ この方法を使っている間、その <code>models/</code> ディレクトリを<strong>移動・リネームしないで
+ください</strong>。移動する場合はスクリプトを再実行するか <code>NR_MODELS_DIR</code> を手動更新。</li>
+<li>または <code>models/</code> を <code>Resamplers/models/</code>（実行ファイルと同じ階層）に置きます。</li>
+</ul>
+<p>設定後、<code>resampler info</code> を実行し、ボコーダのバックエンドが <code>onnxruntime</code> と
+表示される（<code>stub</code> でない）ことを確認してください。</p>
+<blockquote>
+<p>オフライン検証のために意図的に劣化バックエンドを使いたい場合：<code>--allow-stub</code>
+を付けるか <code>NR_ALLOW_STUB=1</code> を設定してください。<code>selftest</code> と <code>info</code>
+サブコマンドは影響を受けません。</p>
+</blockquote>
+<h2 id="パスに関する注意"><a class="header" href="#パスに関する注意">パスに関する注意</a></h2>
+<ul>
+<li><code>Resamplers</code> ディレクトリに置く（またはドラッグ＆ドロップでインストールする）と、パスは OpenUtau が管理するため手動指定は不要です</li>
+<li>macOS / Linux ではバイナリに実行権限を付与してください：<code>chmod +x resampler</code></li>
+<li>macOS で初回実行時に Gatekeeper にブロックされた場合（バイナリは未署名です）、「システム設定 →
+プライバシーとセキュリティ」で許可するか、次を実行します：<code>xattr -d com.apple.quarantine ./resampler</code></li>
+<li>macOS / Linux で Windows 版リサンプラーを実行するには Wine の設定が必要です（<code>Tools &gt; Preferences &gt; Advanced &gt; Wine Path</code>）。本リポジトリはネイティブの macOS/Linux 版を提供しているため、Wine は不要です</li>
+</ul>
+<h2 id="設定が反映されたかの確認"><a class="header" href="#設定が反映されたかの確認">設定が反映されたかの確認</a></h2>
+<p>OpenUtau で 1 音レンダリングし、出力された WAV を確認します。同じ引数を
+コマンドラインから単独で検証することもできます：</p>
+<pre><code class="language-bash">./resampler render &lt;样本路径&gt; /tmp/check.wav C4 100 "" 0 500 60 -50 100 0 '!120' AA
+</code></pre>
+<p>コマンドラインでは鳴るのに OpenUtau では鳴らない場合、問題のほとんどはパスか
+権限にあり、エンジン自体ではありません。</p>
+<h2 id="クラシック系リサンプラーとの違い"><a class="header" href="#クラシック系リサンプラーとの違い">クラシック系リサンプラーとの違い</a></h2>
+<p>OpenUtau がデフォルトで同梱する world 系リサンプラー（<code>worldline</code> など）は、接合部で
+位相合わせを行います。本エンジンはニューラルボコーダの方式で、モデルが合成した波形を
+出力します。そのため：</p>
+<ul>
+<li>音質は自然な発声に近づきますが、<strong>毎回のレンダリング結果は完全に同一</strong>です（ランダム性はありません）</li>
+<li>長い音符はループ結合に依存します。<code>He</code> フラグで強制的に有効化できます</li>
+<li>CPU 推論のため 1 回のレンダリングにはクラシック系リサンプラーより時間がかかり、キャッシュの併用を推奨します</li>
+</ul>
+<h2 id="パフォーマンス"><a class="header" href="#パフォーマンス">パフォーマンス</a></h2>
+<p>初回レンダリングにはモデル読み込みのオーバーヘッド（数十ミリ秒程度）があります。以降は
+1 音あたりの所要時間が主にメルスペクトログラム解析とボコーダの推論で決まります。キャッシュを
+有効にすると、同じ入力の再レンダリングが大幅に速くなります。</p>
+<p>GPU 加速が必要な場合は、<code>--features cuda</code>（NVIDIA）または <code>--features directml</code>（Windows）を
+付けてご自身でビルドしてください。詳細は<a href="#インストール">インストール</a>を参照してください。</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="コマンドラインリファレンス"><a class="header" href="#コマンドラインリファレンス">コマンドラインリファレンス</a></h1>
+<h2 id="2-つの呼び出し形式"><a class="header" href="#2-つの呼び出し形式">2 つの呼び出し形式</a></h2>
+<p><strong>1）UTAU プロトコル（サブコマンドなし）</strong> —— ホストエディタから使用します。引数の順序は固定：</p>
+<pre><code class="language-bash">resampler in.wav out.wav C4 100 "" 0 500 60 -50 100 0 !120 AA
+</code></pre>
+<p><strong>2）明示的サブコマンド</strong> —— 手動で使用する場合：</p>
+<pre><code class="language-bash">resampler render  in.wav out.wav A4
+resampler batch   list.txt --jobs 4
+resampler info
+resampler selftest
+resampler config  my.yaml
+</code></pre>
+<p>プログラムはまず、引数が UTAU 呼び出しらしく見えるか（位置引数が 4 つ以上で、第 1 引数がサブコマンド名でない）を判定します。
+そうであればプロトコルパスを通し、そうでなければサブコマンドとして解析します。</p>
+<h2 id="グローバルオプション"><a class="header" href="#グローバルオプション">グローバルオプション</a></h2>
+<p>サブコマンドの<strong>前</strong>に置けます（後ろに置いても可。いずれも <code>global</code> です）：</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>オプション</th><th>説明</th></tr>
+</thead>
+<tbody>
+<tr><td><code>--config &lt;FILE&gt;</code></td><td>設定ファイルを指定</td></tr>
+<tr><td><code>--models &lt;DIR&gt;</code></td><td>設定内のモデルディレクトリを上書き</td></tr>
+<tr><td><code>--log-level &lt;LEVEL&gt;</code></td><td><code>error</code>/<code>warn</code>/<code>info</code>/<code>debug</code>/<code>trace</code>、デフォルト <code>info</code></td></tr>
+<tr><td><code>--log-format &lt;FORMAT&gt;</code></td><td><code>text</code> または <code>json</code>、デフォルト <code>text</code></td></tr>
+</tbody>
+</table>
+</div>
+<p>グローバルオプションは素の UTAU 呼び出しの前にも置けます。ホスト側の呼び出し方を変えずにモデルを指定できます：</p>
+<pre><code class="language-bash">resampler --models /opt/nr/models in.wav out.wav C4 100 "" 0 500 60 -50 100 0 !120 AA
+</code></pre>
+<h2 id="render"><a class="header" href="#render">render</a></h2>
+<p>UTAU プロトコルに従って 1 音をレンダリングします。</p>
+<pre><code class="language-bash">resampler render &lt;IN&gt; &lt;OUT&gt; [pitch] [velocity] [flags] [offset] [length]
+                 [consonant] [cutoff] [volume] [modulation] [tempo] [pitchBend]
+</code></pre>
+<p>必須は最初の 2 引数のみで、残りの既定値は <code>C4 100 "" 0 1000 0 0 100 0 !120 AA</code> です。
+引数の意味は <a href="#utau-で使う">UTAU パラメータ表</a> を参照してください。</p>
+<pre><code class="language-bash">./resampler render voice/_a.wav out.wav A4 100 "g-3" 30 500 60 -50 100 0 '!120' AA
+</code></pre>
+<p>出力例：</p>
+<pre><code>已写出 "out.wav"：87 帧 / 500.0ms / 后端 onnxruntime / F0 fcpe-onnx / 耗时 812.3ms
+</code></pre>
+<h2 id="batch"><a class="header" href="#batch">batch</a></h2>
+<p>一括レンダリング。リストファイルの各行が 1 組の UTAU パラメータで、空行と <code>#</code> で始まる行はスキップされます。</p>
+<pre><code class="language-text"># list.txt
+voice/_a.wav out/a.wav C4 100 "" 0 500 60 -50 100 0 !120 AA
+voice/_i.wav out/i.wav D4 100 "" 0 500 60 -50 100 0 !120 AA
+</code></pre>
+<pre><code class="language-bash">./resampler batch list.txt --jobs 4
+</code></pre>
+<p><code>--jobs 0</code> は直列を意味し、デフォルトは <code>0</code> です。並列時の出力順序は保証されません。</p>
+<p>バッチ全体で 1 つのエンジンインスタンスを共有します：ONNX モデルの読み込みは 1 回だけで、行ごとに 97MB のモデルを
+再読み込みすることはありません。推論セッションは内部のミューテックスで保護されているため、<code>--jobs</code> による高速化の多くは
+前処理の並列化と再読み込みの省略から得られるもので、推論部分は直列のままです——自動バッチ処理のような場面では
+<code>--jobs</code> を物理コア数の半分程度にしておけばよく、無闇に増やしても追加の効果はありません。</p>
+<h2 id="info"><a class="header" href="#info">info</a></h2>
+<p>バージョン、ビルド情報、設定フィンガープリント、モデルの状態を出力します。音声は生成しません。</p>
+<pre><code class="language-bash">./resampler info
+</code></pre>
+<pre><code>neural-resampler 0.1.0
+配置指纹: eb865efe4eba82b7
+--- 模型 ---
+声码器  : "models/pc_nsf_hifigan.onnx"  [已就绪]
+FCPE    : "models/fcpe.onnx"  [已就绪]
+--- 运行时 ---
+声码器后端: onnxruntime
+F0 后端    : fcpe-onnx
+</code></pre>
+<p><strong>設定フィンガープリント</strong>は有用です：設定を変更すると値が変わり、キャッシュもそれに伴って無効化されます。</p>
+<h2 id="selftest"><a class="header" href="#selftest">selftest</a></h2>
+<p>440Hz のテスト音を生成し、パイプラインをエンドツーエンドで実行して出力が空でないことを検証します。インストールが正常かの確認に使います。</p>
+<pre><code class="language-bash">./resampler selftest                    # 默认输出到 target/selftest/
+./resampler selftest --out-dir /tmp/nr  # 指定目录
+</code></pre>
+<p>成功すると <code>自检通过</code> と表示して終了コード 0 で終了します。出力が空の場合はエラーを出して終了します。</p>
+<h2 id="config"><a class="header" href="#config">config</a></h2>
+<p>現在有効な設定を YAML としてエクスポートします。それをベースに編集するのに便利です。</p>
+<pre><code class="language-bash">./resampler config my.yaml
+</code></pre>
+<h2 id="終了コード"><a class="header" href="#終了コード">終了コード</a></h2>
+<p><code>0</code> は成功、<code>0</code> 以外は失敗です。失敗メッセージは stderr に出力されます。<code>--log-level debug</code> を上げると、
+モデル読み込みやバックエンド選択などの詳細が見られます。</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="設定ファイル"><a class="header" href="#設定ファイル">設定ファイル</a></h1>
+<p>デフォルト設定はコンパイル時にバイナリへ組み込まれています。変更したい場合はまず書き出してください：</p>
+<pre><code class="language-bash">./resampler config my.yaml
+./resampler --config my.yaml render voice/_a.wav out.wav A4
+</code></pre>
+<blockquote>
+<p>⚠️ <code>mel.*</code> と <code>f0.*</code> の数値は<strong>モデルに紐づいています</strong>。異なる仕様の ONNX モデルに差し替えるときは、
+これらのパラメータを必ず同時に変更してください。そうしないと出力がこもったり、歪んだり、まったく鳴らなくなったりします。デフォルトのモデルを使うなら触らないでください。</p>
+</blockquote>
+<h2 id="models_dir"><a class="header" href="#models_dir">models_dir</a></h2>
+<p>モデルのルートディレクトリです。設定内の各 <code>model</code> フィールドはここからの相対パスなので、<strong><code>models/</code> を二重に書かないでください</strong>。</p>
+<pre><code class="language-yaml">models_dir: "models"     # ✅ 则 vocoder.model 写 "pc_nsf_hifigan.onnx"
+</code></pre>
+<h2 id="mel--スペクトル分析"><a class="header" href="#mel--スペクトル分析">mel —— スペクトル分析</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>項目</th><th>デフォルト</th><th>説明</th></tr>
+</thead>
+<tbody>
+<tr><td><code>sample_rate</code></td><td>44100</td><td>分析サンプルレート</td></tr>
+<tr><td><code>n_fft</code></td><td>2048</td><td>FFT 点数</td></tr>
+<tr><td><code>win_size</code></td><td>2048</td><td>窓長</td></tr>
+<tr><td><code>hop_size</code></td><td>512</td><td>レンダリングのフレームシフト</td></tr>
+<tr><td><code>origin_hop_size</code></td><td>128</td><td>分析のフレームシフト（より細かく、時間領域補間に使用）</td></tr>
+<tr><td><code>n_mels</code></td><td>128</td><td>Mel bin 数</td></tr>
+<tr><td><code>fmin</code> / <code>fmax</code></td><td>40 / 16000</td><td>周波数範囲（Hz）</td></tr>
+<tr><td><code>clip_val</code></td><td><code>1e-9</code></td><td>対数圧縮の下限</td></tr>
+<tr><td><code>magnitude_eps</code></td><td>0.0</td><td>振幅フロア。<code>0</code> は単純な <code>abs()</code></td></tr>
+<tr><td><code>mel_scale</code></td><td><code>slaney</code></td><td>スケール：<code>slaney</code>（librosa のデフォルト）/ <code>htk</code></td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="f0--ピッチ抽出"><a class="header" href="#f0--ピッチ抽出">f0 —— ピッチ抽出</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>項目</th><th>デフォルト</th><th>説明</th></tr>
+</thead>
+<tbody>
+<tr><td><code>backend</code></td><td><code>auto</code></td><td><code>auto</code> / <code>fcpe</code> / <code>world</code> / <code>none</code></td></tr>
+<tr><td><code>mode</code></td><td><code>hybrid</code></td><td><code>score</code> / <code>source</code> / <code>hybrid</code>。<a href="#f0-生成モード">F0 モード</a> を参照</td></tr>
+<tr><td><code>model</code></td><td><code>fcpe.onnx</code></td><td>FCPE モデルのファイル名</td></tr>
+<tr><td><code>sample_rate</code></td><td>16000</td><td>FCPE の入力サンプルレート</td></tr>
+<tr><td><code>hop_size</code> / <code>win_size</code> / <code>n_fft</code></td><td>160 / 1024 / 1024</td><td>FCPE のスペクトルパラメータ</td></tr>
+<tr><td><code>mel_bins</code></td><td>128</td><td>FCPE の Mel bin 数</td></tr>
+<tr><td><code>fmin</code> / <code>fmax</code></td><td>0 / 8000</td><td>FCPE の周波数範囲</td></tr>
+<tr><td><code>f0_min</code> / <code>f0_max</code></td><td>80 / 880</td><td>有効な F0 範囲（Hz）。範囲外は無効とみなされます</td></tr>
+<tr><td><code>uv_threshold</code></td><td>0.006</td><td>信頼度がこの値未満なら無声と判定</td></tr>
+<tr><td><code>uv_mask</code></td><td>true</td><td>無声フレームの F0 をゼロにする</td></tr>
+<tr><td><code>max_deviation_cents</code></td><td>100.0</td><td>hybrid モードで許容される自然なずれの最大値</td></tr>
+<tr><td><code>smoothing_ms</code></td><td>40.0</td><td>基準カーブの平滑化ウィンドウ</td></tr>
+<tr><td><code>decoder</code></td><td><code>local_argmax</code></td><td>latent→cent のデコード：<code>local_argmax</code> / <code>argmax</code></td></tr>
+<tr><td><code>local_argmax_width</code></td><td>4</td><td>片側のウィンドウ幅（合計ウィンドウは 2×width+1）</td></tr>
+<tr><td><code>cent_f0_min</code> / <code>cent_f0_max</code></td><td>32.70 / 1975.5</td><td>cent テーブルの周波数範囲（C1～B6）</td></tr>
+<tr><td><code>clip_val</code></td><td><code>1e-5</code></td><td>F0 分析の対数圧縮下限</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="vocoder--ボコーダ"><a class="header" href="#vocoder--ボコーダ">vocoder —— ボコーダ</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>項目</th><th>デフォルト</th><th>説明</th></tr>
+</thead>
+<tbody>
+<tr><td><code>backend</code></td><td><code>ort</code></td><td>推論バックエンド</td></tr>
+<tr><td><code>model</code></td><td><code>pc_nsf_hifigan.onnx</code></td><td>ボコーダモデル</td></tr>
+<tr><td><code>hnsep_model</code></td><td><code>hnsep.onnx</code></td><td>オプション。調波/非調波分離</td></tr>
+<tr><td><code>mel_input</code> / <code>f0_input</code></td><td><code>mel</code> / <code>f0</code></td><td>入力ノード名</td></tr>
+<tr><td><code>output</code></td><td><code>audio</code></td><td>出力ノード名</td></tr>
+<tr><td><code>mel_layout</code></td><td><code>auto</code></td><td><code>auto</code> / <code>channels_first</code> / <code>frames_first</code></td></tr>
+<tr><td><code>providers</code></td><td><code>[cpu]</code></td><td>順に試行：<code>cpu</code> / <code>directml</code> / <code>cuda</code> / <code>coreml</code></td></tr>
+</tbody>
+</table>
+</div>
+<p><code>mel_layout: auto</code> はモデルのメタデータを読み、入力が <code>[1,n_mels,T]</code> か <code>[1,T,n_mels]</code> かを自動判定します。
+モデルが誤判定されて出力がおかしい場合は、明示的に指定してください。</p>
+<h2 id="processing--処理"><a class="header" href="#processing--処理">processing —— 処理</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>項目</th><th>デフォルト</th><th>説明</th></tr>
+</thead>
+<tbody>
+<tr><td><code>loop_mode</code></td><td>true</td><td>長い音符のとき、母音区間を反射ループでつなぐ</td></tr>
+<tr><td><code>fill</code></td><td>6</td><td>前後に余分に残すフレーム数</td></tr>
+<tr><td><code>trim_silence</code></td><td>false</td><td>分析前に無音を切り取る</td></tr>
+<tr><td><code>silence_threshold_db</code></td><td>-52.0</td><td>無音判定のしきい値</td></tr>
+<tr><td><code>gender</code></td><td>0</td><td>デフォルトのジェンダーオフセット（<code>g</code> フラグに対応）</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="output--出力"><a class="header" href="#output--出力">output —— 出力</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>項目</th><th>デフォルト</th><th>説明</th></tr>
+</thead>
+<tbody>
+<tr><td><code>sample_rate</code></td><td>44100</td><td>出力サンプルレート</td></tr>
+<tr><td><code>bit_depth</code></td><td>16</td><td><code>16</code>/<code>24</code>/<code>32</code> は整数 PCM、<code>0</code> は 32 ビット浮動小数点</td></tr>
+<tr><td><code>peak_limit</code></td><td>1.0</td><td>ピーク上限</td></tr>
+<tr><td><code>wave_norm</code></td><td>true</td><td>ラウドネス正規化を有効化</td></tr>
+<tr><td><code>loudness_target</code></td><td>-16.0</td><td>目標ラウドネス</td></tr>
+<tr><td><code>loudness_block_ms</code></td><td>400.0</td><td>ラウドネス測定のブロックサイズ</td></tr>
+<tr><td><code>fade_in_ms</code> / <code>fade_out_ms</code></td><td>0.0 / 0.0</td><td>フェードイン/アウトの長さ</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="cache--特徴量キャッシュ"><a class="header" href="#cache--特徴量キャッシュ">cache —— 特徴量キャッシュ</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>項目</th><th>デフォルト</th><th>説明</th></tr>
+</thead>
+<tbody>
+<tr><td><code>enabled</code></td><td>true</td><td>キャッシュを有効化</td></tr>
+<tr><td><code>extension</code></td><td><code>nrc</code></td><td>キャッシュファイルの拡張子</td></tr>
+<tr><td><code>zstd_level</code></td><td>3</td><td>圧縮レベル</td></tr>
+<tr><td><code>dir</code></td><td>null</td><td>キャッシュディレクトリ。<code>null</code> は入力と同じディレクトリ</td></tr>
+</tbody>
+</table>
+</div>
+<p>キャッシュキーにはソースファイルのサイズ、更新時刻、設定フィンガープリントが含まれ、<strong>設定を変更すると自動で無効化されます</strong>。手動でのクリーンアップは不要です。</p>
+<h2 id="runtime--ランタイム"><a class="header" href="#runtime--ランタイム">runtime —— ランタイム</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>項目</th><th>デフォルト</th><th>説明</th></tr>
+</thead>
+<tbody>
+<tr><td><code>log_level</code></td><td><code>info</code></td><td>ログレベル</td></tr>
+<tr><td><code>log_format</code></td><td><code>text</code></td><td><code>text</code> / <code>json</code></td></tr>
+<tr><td><code>intra_op_threads</code></td><td>0</td><td>演算子内スレッド数。<code>0</code> は自動</td></tr>
+<tr><td><code>inter_op_threads</code></td><td>0</td><td>演算子間スレッド数。<code>0</code> は自動</td></tr>
+</tbody>
+</table>
+</div>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="f0-生成モード"><a class="header" href="#f0-生成モード">F0 生成モード</a></h1>
+<p>F0（基本周波数）カーブは、出力がどの高さで歌うか、どのように滑るかを決めます。設定 <code>f0.mode</code> で F0 をどこから取得するかを決めます。</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>モード</th><th>動作</th><th>適した場面</th></tr>
+</thead>
+<tbody>
+<tr><td><code>score</code></td><td>F0 が完全にスコア（音名 + pitchBend）から決まり、元の HiFiSampler と同じ</td><td>スコアに正確に合わせたい</td></tr>
+<tr><td><code>source</code></td><td>サンプル自身の F0 カーブをまとめて目標ピッチへ移調する</td><td>元サンプルのビブラート/滑音を残したい</td></tr>
+<tr><td><code>hybrid</code></td><td>スコアが絶対ピッチを与え、サンプルの F0 が自然なずれと有声音判定を担う</td><td><strong>デフォルト</strong>。正確さと自然さの両立</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="score"><a class="header" href="#score">score</a></h2>
+<p>サンプル自身のピッチを完全に無視し、スコアに従って F0 を生成します。結果は最も制御しやすく MIDI に忠実ですが、
+サンプルに本来含まれるビブラートや音色の揺らぎが失われ、「電子的」に聞こえることがあります。</p>
+<p>向いているケース：ピッチを厳密に合わせたいプロジェクト、ハーモニーの積み重ね。</p>
+<h2 id="source"><a class="header" href="#source">source</a></h2>
+<p>サンプル自身の F0 カーブを丸ごと目標ピッチへ平行移動します。サンプルのビブラート、滑音、息のニュアンスがすべて保たれ、
+最も「元の音源らしい」響きになりますが、絶対ピッチはスコアと合いません（サンプル自体が高めに歌っていれば、そのぶん高めのままです）。</p>
+<p>向いているケース：自然さを重視する場合、スコア自体がサンプルから採譜したものである場合。</p>
+<h2 id="hybridデフォルト"><a class="header" href="#hybridデフォルト">hybrid（デフォルト）</a></h2>
+<p>スコアを絶対的な基準にし、そこへサンプル F0 の<strong>相対的なずれ</strong>を重ね合わせます。さらにサンプルの有声音判定で
+有声/無声フレームを区別します。これによりピッチを合わせながら、自然な揺らぎを保てます。</p>
+<p>ずれの量は <code>f0.max_deviation_cents</code> で制限されます（デフォルト 100 cent、半音 1 つぶん）。
+サンプルが極端にずれてピッチを狂わせるのを防ぎます。基準カーブの平滑化ウィンドウは <code>f0.smoothing_ms</code> で制御します（デフォルト 40ms）。</p>
+<p>向いているケース：ほぼすべての場面。スコアにもっと合わせたいなら <code>max_deviation_cents</code> を小さく、
+もっと自然にしたいなら大きくします（または <code>source</code> を使います）。</p>
+<h2 id="選び方"><a class="header" href="#選び方">選び方</a></h2>
+<p>まずデフォルトの <code>hybrid</code> を使ってください。ピッチの正確さが足りないと感じたら <code>score</code> の方へ、
+硬すぎると感じたら <code>source</code> の方へ。3 者の違いは 1 音では分かりにくくても、
+旋律としてつなげば聞き分けられます。</p>
+<h2 id="f0-バックエンドについて"><a class="header" href="#f0-バックエンドについて">F0 バックエンドについて</a></h2>
+<p><code>f0.backend: auto</code> の場合の優先順位：</p>
+<ol>
+<li><strong>FCPE（ONNX）</strong> —— 歌声の場面で最も安定。<code>fcpe.onnx</code> が必要</li>
+<li><strong>内蔵 DSP</strong> —— DIO/Harvest 方式。モデル不要</li>
+<li><strong>スコアのみ</strong> —— 最後のフォールバック</li>
+</ol>
+<p><code>resampler info</code> の <code>F0 后端</code> の行に、現在実際に使われているバックエンドが表示されます。</p>
+<blockquote>
+<p>FCPE の出力は <strong>360 クラスの cent 分類 latent</strong> であり、直接の F0 値ではありません。
+プログラムは公式の手順に沿ってデコードします：局所 argmax（±4 クラス）の加重平均 → <code>f0 = 10 · 2^(cent/1200)</code>、
+信頼度が <code>f0.uv_threshold</code>（デフォルト 0.006）以下のフレームは無声と判定されます。</p>
+</blockquote>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="トラブルシューティング"><a class="header" href="#トラブルシューティング">トラブルシューティング</a></h1>
+<p>問題が起きたら、<strong>まずコマンドラインで再現してください</strong>。エディタ内のエラーは情報が少ないことが多く、
+コマンドラインなら具体的な原因が分かります：</p>
+<pre><code class="language-bash">./resampler --log-level debug render &lt;样本&gt; /tmp/t.wav C4 100 "" 0 500 0 0 100 0 '!120' AA
+</code></pre>
+<h2 id="症状早見表"><a class="header" href="#症状早見表">症状早見表</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>症状</th><th>考えられる原因</th><th>対処</th></tr>
+</thead>
+<tbody>
+<tr><td><code>info</code> でモデルが <code>[缺失]</code> と表示される</td><td>モデルが <code>models/</code> に置かれていない</td><td><code>./download_models.sh</code> を実行する（Windows: <code>.\download_models.ps1</code>）。または <code>--models</code> で実際のディレクトリを指定する</td></tr>
+<tr><td>モデルのダウンロードが遅い/失敗する</td><td>GitHub への直接接続が不安定</td><td>スクリプトは自動的に gh-proxy ミラーへ切り替えます。<code>NR_MODEL_MIRROR=https://gh-proxy.com/</code> でミラーを強制することもできます</td></tr>
+<tr><td>ボコーダのバックエンドが <code>stub</code></td><td>同上</td><td>同上。<strong>Stub は接続確認専用で、音質は実用になりません</strong></td></tr>
+<tr><td>F0 のバックエンドが <code>world-dio</code></td><td><code>fcpe.onnx</code> がない</td><td>機能的には正常ですが、歌声の場面ではやや不安定です。FCPE を使いたければモデルを追加してください</td></tr>
+<tr><td>出力の長さが明らかにおかしい</td><td><code>length</code> の単位は<strong>ミリ秒</strong></td><td>1 秒が欲しければ <code>1000</code> を渡します。<code>44100</code> ではありません</td></tr>
+<tr><td>出力がほとんど無音</td><td>入力サンプルが小さすぎる / ラウドネス正規化が音を押さえている</td><td>入力の音量を確認する。<code>output.wave_norm: false</code> を試して比較する</td></tr>
+<tr><td>音がこもる、覆われたように聞こえる</td><td><code>mel.*</code> がモデルの仕様と不一致</td><td>デフォルトの <code>mel.*</code> に戻す。<code>mel_scale: slaney</code> を確認する</td></tr>
+<tr><td>音が砕ける、金属音が混じる</td><td><code>mel_layout</code> の誤判定</td><td><code>vocoder.mel_layout: channels_first</code> または <code>frames_first</code> を明示的に設定して試す</td></tr>
+<tr><td>ピッチが全体的におかしい</td><td>音名の形式 / F0 モード</td><td>音名が <code>C4</code> のような形式か確認する。<code>f0.mode</code> を変えて試す（<a href="#f0-生成モード">F0 モード</a> を参照）</td></tr>
+<tr><td>ビルド時に ort のリンクエラー</td><td>GPU 用 feature を複数同時に有効化している</td><td><strong><code>--all-features</code> を使わないでください</strong>。GPU 用 feature は相互排他です</td></tr>
+<tr><td>プロセス終了時に SIGSEGV（exit 139）</td><td><code>load-dynamic</code> リンク時の dylib バージョン不一致</td><td>下の <a href="#load-dynamic-版本约束">load-dynamic のバージョン制約</a> を参照</td></tr>
+<tr><td>毎回レンダリングが遅い</td><td>キャッシュミス</td><td><code>cache.enabled: true</code> を確認する。設定を変更するとフィンガープリントが変わり再構築されます</td></tr>
+<tr><td>macOS で「開けません」と出る</td><td>バイナリが未署名</td><td><code>xattr -d com.apple.quarantine ./resampler</code></td></tr>
+<tr><td>UTAU で反応しない</td><td>パスに空白や中国語文字が含まれる</td><td>プログラムを空白・中国語文字のない純粋な英数字パス（例：<code>C:\nr\</code>）に置く</td></tr>
+<tr><td>ログに pitchBend の警告が出る</td><td>pitchBend 文字列の長さが異常</td><td>すでに寛容に処理されており、末尾の文字が落とされるだけで、レンダリング全体には影響しません</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="どの層の問題かを見分ける"><a class="header" href="#どの層の問題かを見分ける">どの層の問題かを見分ける</a></h2>
+<p>この順序で調べると、すばやく絞り込めます：</p>
+<p><strong>1. モデルはあるか？</strong></p>
+<pre><code class="language-bash">./resampler info
+</code></pre>
+<p>2 つとも <code>[已就绪]</code> なら揃っています。</p>
+<p><strong>2. エンジンは音を出せるか？</strong></p>
+<pre><code class="language-bash">./resampler selftest
+</code></pre>
+<p>内蔵生成の 440Hz テスト音で一通り実行します。ここで失敗するなら問題はエンジン/モデル側にあり、
+あなたの音源とは無関係です。</p>
+<p><strong>3. あなたのサンプルは音を出せるか？</strong></p>
+<pre><code class="language-bash">./resampler render &lt;你的样本&gt; /tmp/t.wav C4
+</code></pre>
+<p>selftest が通ってここで失敗するなら、問題はサンプル自体（形式、サンプルレート、長さ）にあります。</p>
+<p><strong>4. エディタのパラメータは正しいか？</strong></p>
+<p>コマンドラインで鳴るのにエディタで鳴らないなら、問題はエディタ側の呼び出し引数かパス設定にあります。</p>
+<h2 id="ログ"><a class="header" href="#ログ">ログ</a></h2>
+<p>ログレベルを上げると、モデル読み込み、バックエンド選択、Mel の形状、F0 の統計などの詳細が見られます：</p>
+<pre><code class="language-bash">./resampler --log-level debug --models ./models info
+</code></pre>
+<p><code>--log-format json</code> は構造化ログを出力し、スクリプトでの処理に便利です：</p>
+<pre><code class="language-bash">./resampler --log-format json render a.wav b.wav C4 2&gt;&amp;1 | grep '"level":"error"'
+</code></pre>
+<h2 id="load-dynamic-のバージョン制約"><a class="header" href="#load-dynamic-のバージョン制約">load-dynamic のバージョン制約</a></h2>
+<p>デフォルトの配布成果物は ONNX Runtime をバイナリに<strong>静的リンク</strong>しているため、この問題は起きません。
+しかし <code>load-dynamic</code> 方式で自分でビルドした場合（実行時に <code>libonnxruntime.so</code> /
+<code>onnxruntime.dll</code> を読み込む）には、分かりにくい落とし穴があります：</p>
+<p><strong>dylib のバージョンは、ort-sys がビルド時に期待するバージョンと正確に一致している必要があります</strong>（例：1.28.0）。
+隣接するバージョン（例：1.19.2、1.22.0）では——レンダリングはまったく正常ですが、<strong>プロセスの終了時に
+SIGSEGV が発生します</strong>（exit 139）。クラッシュ地点は <code>exit() → ld-linux 析构 → libonnxruntime</code> で、
+gdb のスタックトレースはライブラリのアンロード問題に見えますが、実際は ABI 非互換によるクリーンアップパスの範囲外アクセスです。</p>
+<p>調べ方：</p>
+<ul>
+<li>読み込まれているライブラリのバージョンを確認：<code>ldd resampler | grep onnxruntime</code> のあと、その so のバージョンを調べる</li>
+<li>ビルド設定に対応する正確なバージョンに替えるか、静的リンク（デフォルトの配布モード）へ切り替える</li>
+<li>終了コードをチェックする CI ホストでは、この問題は「レンダリングは成功したがタスクが失敗」として現れます</li>
+</ul>
+<h2 id="キャッシュ関連"><a class="header" href="#キャッシュ関連">キャッシュ関連</a></h2>
+<p>キャッシュファイルは入力と同じディレクトリの <code>.nrc</code>（zstd 圧縮）です。キャッシュキー = ソースファイルのパス + サイズ + mtime +
+設定フィンガープリント + サンプルレート なので：</p>
+<ul>
+<li>設定を変更 → 自動で無効化して再構築</li>
+<li>ソースファイルを変更 → 自動で無効化して再構築</li>
+<li><code>.nrc</code> を手動で削除しても、次のレンダリングが 1 回遅くなるだけで、壊れません</li>
+</ul>
+<p>キャッシュを無効化するには：<code>cache.enabled: false</code>。</p>
+<h2 id="それでも解決しないとき"><a class="header" href="#それでも解決しないとき">それでも解決しないとき</a></h2>
+<p>以下の情報を添えて <a href="https://github.com/Henley04/neural-resampler/issues">Issues</a> で質問してください：</p>
+<ul>
+<li><code>./resampler info</code> の完全な出力</li>
+<li>再現に使ったコマンドラインと引数</li>
+<li><code>--log-level debug</code> のログ</li>
+<li>OS とプラットフォーム</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="よくある質問"><a class="header" href="#よくある質問">よくある質問</a></h1>
+<h3 id="音源ボイスバンクを変更する必要はありますか"><a class="header" href="#音源ボイスバンクを変更する必要はありますか">音源（ボイスバンク）を変更する必要はありますか？</a></h3>
+<p>必要ありません。WAV と <code>oto.ini</code> はそのまま使えます。エディタのリサンプラー設定を本プログラムに向けるだけです。</p>
+<h3 id="リリースパッケージにモデルが入っていないのはなぜですか"><a class="header" href="#リリースパッケージにモデルが入っていないのはなぜですか">リリースパッケージにモデルが入っていないのはなぜですか？</a></h3>
+<p>理由は 2 つあります。モデルの合計が約 100 MB になることと、ライセンスが再配布を許可していない場合があることです。
+そのためモデルは利用者各自が入手します。リリースパッケージには <code>download_models.sh</code>
+（Windows は <code>download_models.ps1</code>）が同梱されています。</p>
+<h3 id="モデルがなくても動きますか"><a class="header" href="#モデルがなくても動きますか">モデルがなくても動きますか？</a></h3>
+<p>用途によります。<code>resampler selftest</code> と <code>resampler info</code> は影響を受けず、
+パイプラインの動作確認ができます。ただし <code>render</code> / <code>batch</code> / UTAU プロトコルの
+レンダリングは、モデルが欠落していると<strong>明示的なエラーで終了</strong>します（対処法つきの
+三言語メッセージ）。実用にならない音声は出力されません。オフライン検証のために
+意図的に劣化バックエンドを使いたい場合は、<code>--allow-stub</code> を付けるか
+<code>NR_ALLOW_STUB=1</code> を設定してください。</p>
+<h3 id="openutau-でのレンダリングがボコーダーモデルが見つからないエラーになる"><a class="header" href="#openutau-でのレンダリングがボコーダーモデルが見つからないエラーになる">OpenUtau でのレンダリングが「ボコーダーモデルが見つからない」エラーになる？</a></h3>
+<p>OpenUtau はリサンプラーをインストールするとき、実行ファイルを自身の
+<code>Resamplers/</code> ディレクトリへ<strong>コピー</strong>します——モデルは同行しません。v0.1.3 から、
+この状況は静かな劣化ではなくなりました（以前は音が出るが音質が劣化し、エラーも
+表示されませんでした）。現在はレンダリングが失敗して三言語のエラーダイアログが
+表示され、リサンプラーの隣に <code>MODEL-MISSING-READ-ME.txt</code> が生成されます。
+対処（どちらか）：</p>
+<ol>
+<li><strong>推奨</strong>：リリースパッケージのディレクトリで <code>download_models.sh</code> /
+<code>download_models.ps1</code> を一度実行——スクリプトが自動的に <code>NR_MODELS_DIR</code> を
+ユーザー環境変数に書き込みます（以降 exe はどこに置いても構いません。ただし
+この方法使用中は models ディレクトリを移動しないでください）</li>
+<li>または <code>models/</code> を <code>Resamplers/models/</code>（実行ファイルと同じ階層）にコピー</li>
+</ol>
+<p>その後 <code>resampler info</code> を実行し、ボコーダのバックエンドが <code>stub</code> ではなく
+<code>onnxruntime</code> と表示されることを確認してください。</p>
+<h3 id="最初のレンダリングが遅いのはなぜですか"><a class="header" href="#最初のレンダリングが遅いのはなぜですか">最初のレンダリングが遅いのはなぜですか？</a></h3>
+<p>初回は Mel 分析と F0 抽出を行い、さらに ONNX モデルを読み込む必要があるためです。同じ入力の 2 回目のレンダリングはキャッシュが効き、
+大きく速くなります。旋律全体をレンダリングするとき、モデルの読み込みは 1 回だけです。</p>
+<h3 id="gpu-はサポートされていますか"><a class="header" href="#gpu-はサポートされていますか">GPU はサポートされていますか？</a></h3>
+<p>サポートされていますが、対応する feature を付けて自分でビルドする必要があります：</p>
+<pre><code class="language-bash">cargo build --release --features cuda      # NVIDIA
+cargo build --release --features directml  # Windows
+cargo build --release --features coreml    # macOS
+</code></pre>
+<p><strong>複数を同時に有効にしないでください</strong>。また <code>--all-features</code> も使わないでください——feature は相互排他で、リンクに失敗します。
+デフォルトの成果物は CPU です。</p>
+<h3 id="出力の長さはどう制御しますか"><a class="header" href="#出力の長さはどう制御しますか">出力の長さはどう制御しますか？</a></h3>
+<p>7 番目の引数 <code>length</code> で、<strong>単位はミリ秒</strong>です。1 秒の出力が欲しければ <code>1000</code> を渡します。
+<code>44100</code> を渡すと 44.1 秒になります。</p>
+<h3 id="utau-と-openutau-の両方に対応していますか"><a class="header" href="#utau-と-openutau-の両方に対応していますか">UTAU と OpenUtau の両方に対応していますか？</a></h3>
+<p>対応しています。両者とも同じ 13 引数プロトコルを使うので、1 つのバイナリで足ります。
+設定方法は <a href="#utau-で使う">UTAU</a> と <a href="#openutau-で使う">OpenUtau</a> を参照してください。</p>
+<h3 id="すべてのフラグが効きますか"><a class="header" href="#すべてのフラグが効きますか">すべてのフラグが効きますか？</a></h3>
+<p>いいえ。現在実際に効いているのは <code>g</code>、<code>t</code>、<code>A</code>、<code>P</code>、<code>He</code>、<code>HG</code> の 6 つだけで、
+それ以外のフラグは解釈されますが、現時点では出力に影響しません。詳しくは <a href="#支持的-flags">UTAU パラメータ</a> を参照してください。</p>
+<h3 id="出力は決定論的ですか"><a class="header" href="#出力は決定論的ですか">出力は決定論的ですか？</a></h3>
+<p>はい。同じ入力 + 同じ引数 + 同じ設定なら、出力はサンプル単位で一致します。ランダム性はありません。</p>
+<h3 id="音がこもる歪む場合は"><a class="header" href="#音がこもる歪む場合は">音がこもる/歪む場合は？</a></h3>
+<p>99% は Mel パラメータとモデル仕様の不一致です。デフォルトの <code>mel.*</code> 設定に戻し、
+<code>mel_scale: slaney</code>、<code>sample_rate: 44100</code>、<code>n_mels: 128</code> を確認してください。
+デフォルト以外のモデルに差し替えた場合は、これらのパラメータを必ず同時に変更してください。</p>
+<h3 id="キャッシュファイルは削除できますか"><a class="header" href="#キャッシュファイルは削除できますか">キャッシュファイルは削除できますか？</a></h3>
+<p>削除できます。削除しても次のレンダリングが少し遅くなるだけです。キャッシュキーにはソースファイルのサイズ、更新時刻、設定フィンガープリントが含まれるため、
+通常は手動でのクリーンアップは不要です。</p>
+<h3 id="商用利用はできますか"><a class="header" href="#商用利用はできますか">商用利用はできますか？</a></h3>
+<p>コードは MIT です。ただし<strong>モデルのライセンスはそれぞれの出所に従います</strong>。商用利用の前にご自身で確認してください。
+これもモデルをリポジトリに同梱していない理由の 1 つです。</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+
+            </nav>
+
+        </div>
+
+        <template id=fa-eye><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/></svg></span></template>
+        <template id=fa-eye-slash><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z"/></svg></span></template>
+        <template id=fa-copy><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M502.6 70.63l-61.25-61.25C435.4 3.371 427.2 0 418.7 0H255.1c-35.35 0-64 28.66-64 64l.0195 256C192 355.4 220.7 384 256 384h192c35.2 0 64-28.8 64-64V93.25C512 84.77 508.6 76.63 502.6 70.63zM464 320c0 8.836-7.164 16-16 16H255.1c-8.838 0-16-7.164-16-16L239.1 64.13c0-8.836 7.164-16 16-16h128L384 96c0 17.67 14.33 32 32 32h47.1V320zM272 448c0 8.836-7.164 16-16 16H63.1c-8.838 0-16-7.164-16-16L47.98 192.1c0-8.836 7.164-16 16-16H160V128H63.99c-35.35 0-64 28.65-64 64l.0098 256C.002 483.3 28.66 512 64 512h192c35.2 0 64-28.8 64-64v-32h-47.1L272 448z"/></svg></span></template>
+        <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
+        <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr-ef4e11c1.min.js"></script>
+        <script src="mark-09e88c2c.min.js"></script>
+        <script src="searcher-09f2665d.js"></script>
+
+        <script src="clipboard-1626706a.min.js"></script>
+        <script src="highlight-abc7f01d.js"></script>
+        <script src="book-609e4cb8.js"></script>
+
+        <!-- Custom JS scripts -->
+
+        <script>
+        window.addEventListener('load', function() {
+            window.setTimeout(window.print, 100);
+        });
+        </script>
+
+
+    </div>
+    </body>
+</html>

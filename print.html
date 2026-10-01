@@ -1,0 +1,1041 @@
+<!DOCTYPE HTML>
+<html lang="zh" class="rust sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>neural-resampler 使用文档</title>
+        <meta name="robots" content="noindex">
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="通用神经重采样器引擎使用文档：纯 Rust + ONNX 重写的 HiFiSampler">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="favicon-8114d1fc.png">
+        <link rel="stylesheet" href="css/variables-8adf115d.css">
+        <link rel="stylesheet" href="css/general-e96d0476.css">
+        <link rel="stylesheet" href="css/chrome-d279d366.css">
+        <link rel="stylesheet" href="css/print-9e4910d8.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="fonts/fonts-9644e21d.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="mdbook-highlight-css" href="highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="ayu-highlight-3fdfc3ac.css">
+
+        <!-- Custom theme stylesheets -->
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "";
+            const default_light_theme = "rust";
+            const default_dark_theme = "coal";
+            window.path_to_searchindex_js = "searchindex-57b4f12d.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="toc-5dfc9ab6.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="mdbook-body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('rust')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="mdbook-sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("mdbook-sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="mdbook-sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+            </noscript>
+            <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="mdbook-page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <div id="mdbook-menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg></span>
+                        </label>
+                        <button id="mdbook-theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="mdbook-theme-list">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M371.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L600.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S549.7-4.4 531.1 9.6L294.4 187.2c-24 18-38.2 46.1-38.4 76.1L371.3 367.1zm-19.6 25.4l-116-104.4C175.9 290.3 128 339.6 128 400c0 3.9 .2 7.8 .6 11.6c1.8 17.5-10.2 36.4-27.8 36.4H96c-17.7 0-32 14.3-32 32s14.3 32 32 32H240c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg></span>
+                        </button>
+                        <ul id="mdbook-theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-ayu">Ayu</button></li>
+                        </ul>
+                        <button id="mdbook-search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="mdbook-searchbar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/></svg></span>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">neural-resampler 使用文档</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
+                        </a>
+                        <a href="https://github.com/Henley04/neural-resampler" title="Git repository" aria-label="Git repository">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg></span>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="mdbook-search-wrapper" class="hidden">
+                    <form id="mdbook-searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="mdbook-searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="mdbook-searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <span class=fa-svg id="fa-spin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M304 48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zm0 416c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM48 304c26.5 0 48-21.5 48-48s-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48zm464-48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM142.9 437c18.7-18.7 18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zm0-294.2c18.7-18.7 18.7-49.1 0-67.9S93.7 56.2 75 75s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zM369.1 437c18.7 18.7 49.1 18.7 67.9 0s18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9z"/></svg></span>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="mdbook-searchresults-outer" class="searchresults-outer hidden">
+                        <div id="mdbook-searchresults-header" class="searchresults-header"></div>
+                        <ul id="mdbook-searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('mdbook-sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('mdbook-sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#mdbook-sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="mdbook-content" class="content">
+                    <main>
+                        <h1 id="介绍"><a class="header" href="#介绍">介绍</a></h1>
+<p><strong>neural-resampler</strong> 是一个通用神经重采样器引擎，用 <strong>纯 Rust + ONNX</strong> 重写了 HiFiSampler。</p>
+<p>传统 UTAU 声库由两部分组成：录音样本（WAV）和每个样本的切分参数（<code>oto.ini</code>）。
+负责变调、变时长、把碎片拼成歌声的，是 resampler 引擎。本项目的目标只有一个：
+<strong>只替换这个引擎，其余一概不动</strong>。</p>
+<h2 id="设计取舍"><a class="header" href="#设计取舍">设计取舍</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>维度</th><th>说明</th></tr>
+</thead>
+<tbody>
+<tr><td>声库兼容</td><td>WAV 与 <code>oto.ini</code> 完全不动，原样沿用</td></tr>
+<tr><td>声码器</td><td>PC-NSF-HiFiGAN（NSF 架构，F0 条件化）</td></tr>
+<tr><td>F0 提取</td><td>FCPE（ONNX，16kHz），可回退到内置 DSP</td></tr>
+<tr><td>依赖</td><td>无 Python 运行时，单二进制部署</td></tr>
+<tr><td>宿主兼容</td><td>OpenUtau / 原生 UTAU，协议层可扩展</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="变调与变时长是怎么做到的"><a class="header" href="#变调与变时长是怎么做到的">变调与变时长是怎么做到的</a></h2>
+<p>神经方案的巧妙之处在于把两件事<strong>解耦</strong>了：</p>
+<ul>
+<li><strong>变调</strong> —— 直接改 F0 曲线。声码器以 F0 为条件，给定不同的 F0 就得到不同音高，
+不需要对波形做重采样，因此不会有传统重采样的金属声。</li>
+<li><strong>变时长</strong> —— 对 Mel 频谱做时序拉伸/循环拼接。改的是帧数，与音高无关。</li>
+</ul>
+<p>这意味着一个样本可以被拉伸到任意长度、唱到任意音高，而两者互不干扰。</p>
+<h2 id="处理流程"><a class="header" href="#处理流程">处理流程</a></h2>
+<pre><code>输入 WAV
+   │
+   ├─ Mel 分析（44.1kHz / 2048 FFT / 帧移 128）
+   │
+   ├─ F0 提取（FCPE，16kHz）  ──┐
+   │                             ├─→ 按乐谱调整 F0
+   ├─ 乐谱：音名 + pitchBend ────┘
+   │
+   ├─ Mel 时序拉伸到目标帧数
+   │
+   ├─ PC-NSF-HiFiGAN 声码器（Mel + F0 → 波形）
+   │
+   └─ 后处理（响度归一化、限幅、淡入淡出）→ 输出 WAV
+</code></pre>
+<h2 id="什么时候适合用它"><a class="header" href="#什么时候适合用它">什么时候适合用它</a></h2>
+<p><strong>适合</strong>：想让传统声库获得更自然的音质；需要在无 Python 环境的机器上部署；
+希望有一份可读、可改、可嵌入其他工具的 Rust 实现。</p>
+<p><strong>不适合</strong>：期待它凭空生成不存在的音素（它仍是拼接合成，只是拼接得更自然）；
+需要 GPU 加速但又不愿意装 CUDA/DirectML（默认走 CPU，可用但慢）。</p>
+<h2 id="许可"><a class="header" href="#许可">许可</a></h2>
+<p>MIT。所用模型遵循各自来源的许可，请自行确认后再用于分发。</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="安装"><a class="header" href="#安装">安装</a></h1>
+<h2 id="方式一下载预编译产物推荐"><a class="header" href="#方式一下载预编译产物推荐">方式一：下载预编译产物（推荐）</a></h2>
+<p>从 <a href="https://github.com/Henley04/neural-resampler/releases">Releases 页面</a> 下载对应平台的压缩包。</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>平台</th><th>文件</th></tr>
+</thead>
+<tbody>
+<tr><td>Linux x86_64</td><td><code>neural-resampler-&lt;ver&gt;-linux-x86_64.tar.gz</code></td></tr>
+<tr><td>macOS Apple Silicon</td><td><code>neural-resampler-&lt;ver&gt;-macos-aarch64.tar.gz</code></td></tr>
+<tr><td>Windows x86_64</td><td><code>neural-resampler-&lt;ver&gt;-windows-x86_64.zip</code></td></tr>
+</tbody>
+</table>
+</div>
+<p>暂不提供预编译产物的平台（macOS Intel、Linux ARM64 等）请自行
+<code>cargo build --release</code>，产物在 <code>target/release/resampler</code>。</p>
+<p>每个压缩包附带同名 <code>.sha256</code> 校验文件，下载后可核对：</p>
+<pre><code class="language-bash">shasum -a 256 -c neural-resampler-0.1.0-linux-x86_64.tar.gz.sha256
+# Windows (PowerShell):
+# (Get-FileHash -Algorithm SHA256 .\xxx.zip).Hash
+</code></pre>
+<p>解压后的目录结构：</p>
+<pre><code>neural-resampler-0.1.0-linux-x86_64/
+├── resampler              # 主程序（Windows 为 resampler.exe）
+├── config.resampler.yaml  # 默认配置，可直接改后用 --config 指定
+├── download_models.sh     # 模型下载脚本（Linux/macOS）
+├── download_models.ps1    # 模型下载脚本（Windows PowerShell）
+├── models/                # 模型放置目录（初始为空）
+├── docs/                  # 架构与模型说明
+└── README.md LICENSE
+</code></pre>
+<blockquote>
+<p><strong>产物不含 ONNX 模型。</strong> 模型体积约 100 MB，且受各自来源许可约束，不随仓库分发。
+解压后请运行 <code>./download_models.sh</code>（Windows 为 <code>.\download_models.ps1</code>）获取，
+详见<a href="#获取模型">获取模型</a>。</p>
+</blockquote>
+<h2 id="方式二从源码构建"><a class="header" href="#方式二从源码构建">方式二：从源码构建</a></h2>
+<p>需要 Rust 稳定版工具链（1.70+）。首次构建会自动下载 ONNX Runtime 预编译库。</p>
+<pre><code class="language-bash">git clone https://github.com/Henley04/neural-resampler.git
+cd neural-resampler
+cargo build --release
+# 产物：target/release/resampler
+</code></pre>
+<p>可选 feature（GPU 加速）：</p>
+<pre><code class="language-bash">cargo build --release --features cuda      # NVIDIA CUDA
+cargo build --release --features directml  # Windows DirectML
+cargo build --release --features coreml    # macOS CoreML
+</code></pre>
+<blockquote>
+<p>⚠️ GPU feature <strong>互斥</strong>，不要同时启用多个，也不要用 <code>--all-features</code>——
+ort 无法为组合后的 feature set 找到匹配的预编译库，会导致链接失败。</p>
+</blockquote>
+<h2 id="方式三打包自己的分发产物"><a class="header" href="#方式三打包自己的分发产物">方式三：打包自己的分发产物</a></h2>
+<pre><code class="language-bash">bash scripts/build_release.sh                 # 输出到 dist/
+bash scripts/build_release.sh --features cuda
+</code></pre>
+<p>脚本会把二进制、默认配置、文档打包，并在本地存在模型时一并附上。</p>
+<h2 id="验证安装"><a class="header" href="#验证安装">验证安装</a></h2>
+<pre><code class="language-bash">./resampler info        # 查看构建信息、配置指纹与模型状态
+./resampler selftest    # 生成测试音并端到端跑一遍
+</code></pre>
+<p><code>info</code> 的输出里，声码器和 FCPE 都显示 <code>[已就绪]</code> 才算真正可用。
+显示 <code>[缺失]</code> 时引擎会降级，详见<a href="#故障排查">故障排查</a>。</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="获取模型"><a class="header" href="#获取模型">获取模型</a></h1>
+<p>引擎需要 ONNX 模型才能产出可用音质。<strong>模型不随仓库与发布产物分发</strong>——体积约 100 MB，
+且各自来源的许可不一定允许再分发，所以请自行获取。</p>
+<h2 id="放置位置"><a class="header" href="#放置位置">放置位置</a></h2>
+<p>模型放在程序<strong>同级或指定</strong>的 <code>models/</code> 目录下：</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>文件</th><th>作用</th><th>必需</th></tr>
+</thead>
+<tbody>
+<tr><td><code>pc_nsf_hifigan.onnx</code></td><td>声码器：Mel + F0 → 波形</td><td><strong>是</strong></td></tr>
+<tr><td><code>fcpe.onnx</code></td><td>F0 提取（16kHz）</td><td>否，缺失时回退到内置 DSP</td></tr>
+<tr><td><code>hnsep.onnx</code></td><td>HN-SEP 谐波/噪声分离</td><td>否</td></tr>
+</tbody>
+</table>
+</div>
+<p>用 <code>--models &lt;DIR&gt;</code> 可以临时指向别的目录：</p>
+<pre><code class="language-bash">./resampler --models /path/to/models info
+</code></pre>
+<h2 id="一键下载"><a class="header" href="#一键下载">一键下载</a></h2>
+<p>发布产物里附带了下载脚本（bash 与 PowerShell 各一份，逻辑相同）：</p>
+<pre><code class="language-bash">./download_models.sh      # Linux / macOS / Git Bash
+</code></pre>
+<pre><code class="language-powershell">powershell -ExecutionPolicy Bypass -File .\download_models.ps1    # Windows PowerShell
+</code></pre>
+<p>仓库中也有一份（<code>scripts/download_models.sh</code> 与 <code>scripts/download_models.ps1</code>）。
+脚本支持自动重试，并在下载后做 <strong>SHA-256 校验</strong>（基线为与 v0.1.0 一起验证过的版本），
+文件损坏或被上游更换时会拒绝安装并给出提示。</p>
+<h3 id="下载源与镜像加速"><a class="header" href="#下载源与镜像加速">下载源与镜像加速</a></h3>
+<p>脚本默认直连 GitHub（<code>raw.githubusercontent.com</code>），并内置 gh-proxy 镜像加速：</p>
+<ol>
+<li>
+<p><strong>自动探测</strong>：GitHub 直连不可达时，自动切换镜像并提示</p>
+</li>
+<li>
+<p><strong>慢速切换</strong>：下载平均速度低于 100KB/s 持续 10 秒时，若当前是直连会
+询问是否切换镜像（<code>NR_MODEL_AUTO_SWITCH=1</code> 可免询问自动切换）；
+直连重试耗尽后也会自动用镜像做最后一轮</p>
+</li>
+<li>
+<p><strong>强制镜像</strong>：设置 <code>NR_MODEL_MIRROR</code> 直接使用指定镜像前缀
+（<a href="https://github.com/hunshcn/gh-proxy">gh-proxy</a> 格式：前缀 + 完整原始 URL）：</p>
+<pre><code class="language-bash">NR_MODEL_MIRROR=https://gh-proxy.com/ ./download_models.sh
+</code></pre>
+<p>也可换成任意自部署或其他 gh-proxy 实例。</p>
+</li>
+</ol>
+<blockquote>
+<p>上游模型更新导致校验不通过时，确认新版本可用后可用
+<code>NR_MODEL_SKIP_CHECKSUM=1</code> 临时跳过校验——<strong>请确认来源可信再这么做</strong>
+（镜像内容被篡改也会被校验拦下）。</p>
+</blockquote>
+<h2 id="手动获取"><a class="header" href="#手动获取">手动获取</a></h2>
+<p>脚本失效时可手动下载，重命名为上表中的文件名后放进 <code>models/</code>：</p>
+<ol>
+<li><strong>FCPE</strong> —— <a href="https://github.com/CNChTu/FCPE">CNChTu/FCPE</a> 的发布页，取 <code>fcpe.onnx</code></li>
+<li><strong>PC-NSF-HiFiGAN</strong> —— 需 ONNX 格式。若手头只有 <code>.ckpt</code> 权重，
+可用仓库内的转换脚本：
+<pre><code class="language-bash">python scripts/convert_vocoder_to_onnx.py --ckpt model.ckpt --out models/pc_nsf_hifigan.onnx
+</code></pre>
+</li>
+</ol>
+<h2 id="确认模型可用"><a class="header" href="#确认模型可用">确认模型可用</a></h2>
+<pre><code class="language-bash">./resampler info
+</code></pre>
+<p>关注这三行：</p>
+<pre><code>声码器  : "models/pc_nsf_hifigan.onnx"  [已就绪]
+FCPE    : "models/fcpe.onnx"  [已就绪]
+HN-SEP  : "models/hnsep.onnx"  [缺失]
+</code></pre>
+<ul>
+<li>声码器 <code>[缺失]</code> → 会退化为 Stub 后端，<strong>出声但音质不可用</strong></li>
+<li>FCPE <code>[缺失]</code> → 退化为内置 DSP 提取 F0，仍可正常工作，只是歌声场景略不稳</li>
+<li>HN-SEP <code>[缺失]</code> → 正常，属于可选增强</li>
+</ul>
+<h2 id="许可-1"><a class="header" href="#许可-1">许可</a></h2>
+<p>请遵循各模型来源仓库/发布页的许可要求。将模型打包进你自己的分发物之前，
+务必先确认许可是否允许。</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="快速开始"><a class="header" href="#快速开始">快速开始</a></h1>
+<p>假定你已经<a href="#安装">安装</a>好程序并<a href="#获取模型">获取了模型</a>。</p>
+<h2 id="第一步自检"><a class="header" href="#第一步自检">第一步：自检</a></h2>
+<pre><code class="language-bash">./resampler selftest
+</code></pre>
+<p>这条命令会生成一段 440Hz 测试音，然后端到端跑一遍完整管线，最后打印：</p>
+<pre><code>已生成测试输入: "target/selftest/selftest_input.wav"
+输出: "target/selftest/selftest_output.wav"（24696 样本 / 560.0ms / 峰值 0.254）
+自检通过
+</code></pre>
+<p>看到 <code>自检通过</code> 就说明装好了。默认输出到 <code>target/selftest/</code>，可用 <code>--out-dir</code> 指定：</p>
+<pre><code class="language-bash">./resampler selftest --out-dir /tmp/nr-test
+</code></pre>
+<h2 id="第二步确认后端状态"><a class="header" href="#第二步确认后端状态">第二步：确认后端状态</a></h2>
+<pre><code class="language-bash">./resampler info
+</code></pre>
+<p>重点看最后两行：</p>
+<pre><code>声码器后端: onnxruntime
+F0 后端    : fcpe-onnx
+</code></pre>
+<p>如果显示的是 <code>stub</code> / <code>world-dio</code>，说明没找到模型，回到<a href="#获取模型">获取模型</a>。</p>
+<h2 id="第三步渲染一个音"><a class="header" href="#第三步渲染一个音">第三步：渲染一个音</a></h2>
+<pre><code class="language-bash">./resampler render voice/_a.wav out.wav A4
+</code></pre>
+<p>只给两个路径也能跑，其余参数都有默认值（A4、力度 100、长度 1000ms）。
+完整参数：</p>
+<pre><code class="language-bash">./resampler render voice/_a.wav out.wav A4 100 "g-3" 30 500 60 -50 100 0 '!120' AA
+</code></pre>
+<p>输出类似：</p>
+<pre><code>已写出 "out.wav"：87 帧 / 500.0ms / 后端 onnxruntime / F0 fcpe-onnx / 耗时 812.3ms
+</code></pre>
+<h2 id="第四步在编辑器里用起来"><a class="header" href="#第四步在编辑器里用起来">第四步：在编辑器里用起来</a></h2>
+<p>二进制本身就是 resampler，直接按 UTAU 协议调用：</p>
+<pre><code class="language-bash">resampler in.wav out.wav C4 100 "" 0 500 60 -50 100 0 !120 AA
+</code></pre>
+<p>接入编辑器的步骤见<a href="#在-utau-中使用">在 UTAU 中使用</a>或<a href="#在-openutau-中使用">在 OpenUtau 中使用</a>。</p>
+<h2 id="批量渲染"><a class="header" href="#批量渲染">批量渲染</a></h2>
+<p>把多组 UTAU 参数写进一个文件，每行一组：</p>
+<pre><code class="language-text"># list.txt
+voice/_a.wav out/a.wav C4 100 "" 0 500 60 -50 100 0 !120 AA
+voice/_i.wav out/i.wav D4 100 "" 0 500 60 -50 100 0 !120 AA
+</code></pre>
+<pre><code class="language-bash">./resampler batch list.txt --jobs 4
+</code></pre>
+<p>以 <code>#</code> 开头的行会被忽略。<code>--jobs 0</code> 表示自动决定并行度。</p>
+<h2 id="改配置"><a class="header" href="#改配置">改配置</a></h2>
+<p>导出默认配置后按需修改，再用 <code>--config</code> 指定：</p>
+<pre><code class="language-bash">./resampler config my.yaml
+# 编辑 my.yaml
+./resampler --config my.yaml render voice/_a.wav out.wav A4
+</code></pre>
+<p>详细配置项见<a href="#配置文件">配置文件</a>。</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="在-utau-中使用"><a class="header" href="#在-utau-中使用">在 UTAU 中使用</a></h1>
+<p>二进制本身即 resampler，不需要额外的包装脚本。UTAU 会按约定的顺序传入参数，
+直接调用即可：</p>
+<pre><code class="language-bash">resampler in.wav out.wav C4 100 "" 0 500 60 -50 100 0 !120 AA
+</code></pre>
+<h2 id="参数含义"><a class="header" href="#参数含义">参数含义</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>#</th><th>参数</th><th>含义</th><th>单位 / 默认</th></tr>
+</thead>
+<tbody>
+<tr><td>1</td><td><code>in.wav</code></td><td>输入样本路径</td><td>—</td></tr>
+<tr><td>2</td><td><code>out.wav</code></td><td>输出路径</td><td>—</td></tr>
+<tr><td>3</td><td><code>pitch</code></td><td>音名</td><td><code>C4</code></td></tr>
+<tr><td>4</td><td><code>velocity</code></td><td>力度</td><td>默认 <code>100</code></td></tr>
+<tr><td>5</td><td><code>flags</code></td><td>渲染标记</td><td>默认空</td></tr>
+<tr><td>6</td><td><code>offset</code></td><td>左空白</td><td><strong>毫秒</strong>，默认 <code>0</code></td></tr>
+<tr><td>7</td><td><code>length</code></td><td>要求长度</td><td><strong>毫秒</strong>，默认 <code>1000</code></td></tr>
+<tr><td>8</td><td><code>consonant</code></td><td>子音部</td><td><strong>毫秒</strong>，默认 <code>0</code></td></tr>
+<tr><td>9</td><td><code>cutoff</code></td><td>右侧空白</td><td><strong>毫秒</strong>，常为负，默认 <code>0</code></td></tr>
+<tr><td>10</td><td><code>volume</code></td><td>音量</td><td>百分比，默认 <code>100</code></td></tr>
+<tr><td>11</td><td><code>modulation</code></td><td>调制</td><td>百分比，默认 <code>0</code></td></tr>
+<tr><td>12</td><td><code>tempo</code></td><td>速度</td><td><code>!120</code> 或 <code>120</code></td></tr>
+<tr><td>13</td><td><code>pitchBend</code></td><td>音高曲线</td><td>Base64+RLE 编码，默认 <code>AA</code></td></tr>
+</tbody>
+</table>
+</div>
+<blockquote>
+<p>⚠️ <strong>第 7 个参数 <code>length</code> 的单位是毫秒，不是采样点。</strong>
+传 <code>44100</code> 会得到 44.1 秒的输出，而不是 1 秒。这是最容易踩的一个坑。</p>
+</blockquote>
+<p><code>cutoff</code> 为负数是正常的（表示右侧重叠区），程序允许负数参数。</p>
+<h2 id="支持的-flags"><a class="header" href="#支持的-flags">支持的 flags</a></h2>
+<p>flags 形如 <code>g-3P60HG20</code>，会按长标记优先解析（<code>/</code> 分隔符会被忽略）。
+<strong>当前版本实际生效的只有下面这些</strong>，其余标记会被解析但不影响输出：</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>标记</th><th>含义</th><th>取值</th></tr>
+</thead>
+<tbody>
+<tr><td><code>g</code></td><td>性别/音色偏移</td><td><code>g-3</code> 表示 −3，单位约等于 1/100 半音，缺省用配置里的 <code>processing.gender</code></td></tr>
+<tr><td><code>t</code></td><td>音高微调</td><td>整数，缺省 <code>0</code></td></tr>
+<tr><td><code>A</code></td><td>按音高变化做振幅调制</td><td>整数，缺省 <code>0</code>（关闭）</td></tr>
+<tr><td><code>P</code></td><td>响度归一化强度</td><td><code>P60</code> = 60%，缺省 <code>100</code></td></tr>
+<tr><td><code>He</code></td><td>强制启用循环拼接</td><td>开关型，出现即启用</td></tr>
+<tr><td><code>HG</code></td><td>growl（嘶吼）</td><td><code>HG20</code> = 20% 强度</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="在-utau-中配置"><a class="header" href="#在-utau-中配置">在 UTAU 中配置</a></h2>
+<ol>
+<li>把 <code>resampler.exe</code> 放到一个固定目录（路径中<strong>不要有空格和中文</strong>，UTAU 的兼容性较差）</li>
+<li>打开 UTAU → <code>工具</code> → <code>选项</code> → <code>音源插件 / Resampler</code></li>
+<li>选择「自定义」或直接在设置里填入 resampler 的完整路径</li>
+<li>确认后渲染一个音符试听</li>
+</ol>
+<p>如果 UTAU 报「resampler 未响应」或输出为空，先用命令行手动跑一次同样的参数，
+看程序自己的报错——绝大多数问题在命令行下都能一眼看出来。</p>
+<h2 id="日志与调试"><a class="header" href="#日志与调试">日志与调试</a></h2>
+<p>UTAU 调用时看不到终端输出，可以把日志级别调高并重定向到文件：</p>
+<pre><code class="language-bash">resampler --log-level debug in.wav out.wav C4 100 "" 0 500 60 -50 100 0 !120 AA 2&gt; debug.log
+</code></pre>
+<p><code>--log-format json</code> 可以输出结构化日志，便于脚本分析。</p>
+<h2 id="性能提示"><a class="header" href="#性能提示">性能提示</a></h2>
+<p>首次渲染某个样本时会做 Mel 分析和 F0 提取，结果会缓存为同目录下的 <code>.nrc</code> 文件
+（zstd 压缩）。第二次渲染同一输入会明显更快。缓存键包含源文件大小、修改时间和配置指纹，
+所以改了配置会自动失效重建——<strong>不用手动删缓存</strong>。</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="在-openutau-中使用"><a class="header" href="#在-openutau-中使用">在 OpenUtau 中使用</a></h1>
+<p>OpenUtau 通过 <code>Resamplers</code> 目录管理第三方 resampler。它按标准 resampler 协议
+传入 13 个参数，与<a href="#在-utau-中使用">原生 UTAU</a> 完全一致，无需额外配置参数模板。</p>
+<h2 id="配置步骤"><a class="header" href="#配置步骤">配置步骤</a></h2>
+<p>依据 <a href="https://github.com/openutau/OpenUtau/wiki/Resamplers-and-Wavtools">OpenUtau 官方 wiki</a>：</p>
+<ol>
+<li>把 <code>resampler</code>（Windows 为 <code>resampler.exe</code>）放进 OpenUtau 的 <code>Resamplers</code> 文件夹：
+<ul>
+<li>Windows：OpenUtau 程序目录下的 <code>Resamplers</code></li>
+<li>Linux：<code>~/.local/share/OpenUtau/Resamplers</code></li>
+<li>也可把可执行文件直接拖到 OpenUtau 主窗口，选 <strong>“Install as resampler”</strong>（0.1.119+）</li>
+</ul>
+</li>
+<li>把渲染器切到 <strong><code>CLASSIC</code></strong></li>
+<li>点击渲染器旁的 <strong>⚙ 齿轮图标</strong>，在 Resampler 下拉中选择本 resampler</li>
+<li>重新渲染工程</li>
+</ol>
+<blockquote>
+<p>可选：在 <code>Resamplers</code> 目录放一个与可执行文件同名的 <code>.yaml</code>
+（如 <code>resampler.yaml</code>）作为 Resampler Manifest，向 OpenUtau 声明本引擎支持的
+flags（expressions），表达式面板会据此显示建议值与范围。</p>
+</blockquote>
+<h2 id="模型放置重要"><a class="header" href="#模型放置重要">模型放置（重要）</a></h2>
+<p>OpenUtau 安装 resampler 时会把可执行文件<strong>复制</strong>到自己的 <code>Resamplers/</code> 目录，
+渲染时的工作目录是 OpenUtau 安装根目录——那里的 <code>models/</code> 不存在。模型缺失时
+引擎<strong>不再静默降级</strong>：渲染会被拒绝，OpenUtau 弹出错误对话框，错误信息为三语
+并附解决方法；同时在 resampler 可执行文件旁边生成
+<code>MODEL-MISSING-READ-ME.txt</code> 警告文件。</p>
+<p>模型目录按以下顺序解析：</p>
+<ol>
+<li>命令行 <code>--models</code>（OpenUtau 不会传，仅供 CLI 手动调用）</li>
+<li>环境变量 <code>NR_MODELS_DIR</code>（<strong>推荐</strong>：下载脚本会自动设置，见下）</li>
+<li>可执行文件<strong>同级</strong>的 <code>models/</code>（即 <code>Resamplers/models/</code>）</li>
+<li>当前工作目录的 <code>models/</code>（发布包布局）</li>
+</ol>
+<p>OpenUtau 场景推荐 2 或 3：</p>
+<ul>
+<li><strong>推荐</strong>：在发布包目录运行一次 <code>download_models.sh</code> / <code>download_models.ps1</code>。
+脚本下载并校验模型后，会自动把 <code>NR_MODELS_DIR</code> 写入用户级环境变量
+（<code>NR_SKIP_ENV=1</code> 可跳过）。此后无论 resampler 被复制到哪里都能找到模型，
+把 exe 拖进 OpenUtau 即可，无需其他配置。
+⚠ 使用此方案期间<strong>不要移动或重命名</strong>该 <code>models/</code> 目录；若必须移动，请重跑
+脚本或手动更新 <code>NR_MODELS_DIR</code>。</li>
+<li>或者把 <code>models/</code> 放到 <code>Resamplers/models/</code>（与 exe 同级）。</li>
+</ul>
+<p>设好后用 <code>resampler info</code> 确认声码器后端显示 <code>onnxruntime</code>（而不是 <code>stub</code>）。</p>
+<blockquote>
+<p>离线自测确需降级运行时：加 <code>--allow-stub</code> 参数或设 <code>NR_ALLOW_STUB=1</code>；
+<code>selftest</code> 与 <code>info</code> 子命令不受影响。</p>
+</blockquote>
+<h2 id="路径注意事项"><a class="header" href="#路径注意事项">路径注意事项</a></h2>
+<ul>
+<li>放进 <code>Resamplers</code> 目录（或拖放安装）后，路径由 OpenUtau 管理，无需手动指定</li>
+<li>macOS / Linux 上确保二进制有执行权限：<code>chmod +x resampler</code></li>
+<li>macOS 首次运行若被 Gatekeeper 拦截（二进制非签名），需在「系统设置 → 隐私与安全性」中允许，
+或执行：<code>xattr -d com.apple.quarantine ./resampler</code></li>
+<li>在 macOS / Linux 上运行 Windows 版 resampler 需配置 Wine
+（<code>Tools &gt; Preferences &gt; Advanced &gt; Wine Path</code>）；本仓库提供原生 macOS/Linux 产物，无需 Wine</li>
+</ul>
+<h2 id="验证配置是否生效"><a class="header" href="#验证配置是否生效">验证配置是否生效</a></h2>
+<p>在 OpenUtau 里渲染一个音符后，查看输出 WAV。也可以用命令行独立验证同样的参数：</p>
+<pre><code class="language-bash">./resampler render &lt;样本路径&gt; /tmp/check.wav C4 100 "" 0 500 60 -50 100 0 '!120' AA
+</code></pre>
+<p>如果命令行能出声而 OpenUtau 不能，问题多半在路径或权限，而不是引擎本身。</p>
+<h2 id="与经典-resampler-的差异"><a class="header" href="#与经典-resampler-的差异">与经典 resampler 的差异</a></h2>
+<p>OpenUtau 默认自带的世界系 resampler（如 <code>worldline</code>）在拼接处做相位对齐；
+本引擎走神经声码器路线，输出的是模型合成的波形，因此：</p>
+<ul>
+<li>音质更接近自然发声，但<strong>每次渲染结果完全一致</strong>（无随机性）</li>
+<li>长音符依赖循环拼接，可用 <code>He</code> 标记强制开启</li>
+<li>CPU 推理，单次渲染耗时比经典 resampler 高，建议配合缓存使用</li>
+</ul>
+<h2 id="性能"><a class="header" href="#性能">性能</a></h2>
+<p>首次渲染会有模型加载开销（约几十毫秒），之后每个音符的耗时主要取决于
+Mel 分析与声码器推理。启用缓存后重复渲染同一输入会快很多。</p>
+<p>如需 GPU 加速，需用 <code>--features cuda</code>（NVIDIA）或 <code>--features directml</code>（Windows）
+自行编译，详见<a href="#安装">安装</a>。</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="命令行参考"><a class="header" href="#命令行参考">命令行参考</a></h1>
+<h2 id="两种调用形式"><a class="header" href="#两种调用形式">两种调用形式</a></h2>
+<p><strong>1）UTAU 协议（无子命令）</strong> —— 宿主编辑器使用，参数顺序固定：</p>
+<pre><code class="language-bash">resampler in.wav out.wav C4 100 "" 0 500 60 -50 100 0 !120 AA
+</code></pre>
+<p><strong>2）显式子命令</strong> —— 手工使用：</p>
+<pre><code class="language-bash">resampler render  in.wav out.wav A4
+resampler batch   list.txt --jobs 4
+resampler info
+resampler selftest
+resampler config  my.yaml
+</code></pre>
+<p>程序会先判断参数是否像 UTAU 调用（至少 4 个位置参数且第 1 个不是子命令名），
+是则走协议路径，否则按子命令解析。</p>
+<h2 id="全局选项"><a class="header" href="#全局选项">全局选项</a></h2>
+<p>可放在子命令<strong>之前</strong>（也可跟在后面，均为 <code>global</code>）：</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>选项</th><th>说明</th></tr>
+</thead>
+<tbody>
+<tr><td><code>--config &lt;FILE&gt;</code></td><td>指定配置文件</td></tr>
+<tr><td><code>--models &lt;DIR&gt;</code></td><td>覆盖配置中的模型目录</td></tr>
+<tr><td><code>--log-level &lt;LEVEL&gt;</code></td><td><code>error</code>/<code>warn</code>/<code>info</code>/<code>debug</code>/<code>trace</code>，默认 <code>info</code></td></tr>
+<tr><td><code>--log-format &lt;FORMAT&gt;</code></td><td><code>text</code> 或 <code>json</code>，默认 <code>text</code></td></tr>
+</tbody>
+</table>
+</div>
+<p>全局选项也能出现在裸 UTAU 调用之前，便于在不改宿主调用方式的前提下指定模型：</p>
+<pre><code class="language-bash">resampler --models /opt/nr/models in.wav out.wav C4 100 "" 0 500 60 -50 100 0 !120 AA
+</code></pre>
+<h2 id="render"><a class="header" href="#render">render</a></h2>
+<p>按 UTAU 协议渲染单个音符。</p>
+<pre><code class="language-bash">resampler render &lt;IN&gt; &lt;OUT&gt; [pitch] [velocity] [flags] [offset] [length]
+                 [consonant] [cutoff] [volume] [modulation] [tempo] [pitchBend]
+</code></pre>
+<p>只有前两个参数是必需的，其余缺省值：<code>C4 100 "" 0 1000 0 0 100 0 !120 AA</code>。
+参数含义见 <a href="#在-utau-中使用">UTAU 参数表</a>。</p>
+<pre><code class="language-bash">./resampler render voice/_a.wav out.wav A4 100 "g-3" 30 500 60 -50 100 0 '!120' AA
+</code></pre>
+<p>输出示例：</p>
+<pre><code>已写出 "out.wav"：87 帧 / 500.0ms / 后端 onnxruntime / F0 fcpe-onnx / 耗时 812.3ms
+</code></pre>
+<h2 id="batch"><a class="header" href="#batch">batch</a></h2>
+<p>批量渲染。清单文件每行一组 UTAU 参数，空行与 <code>#</code> 开头的行会被跳过。</p>
+<pre><code class="language-text"># list.txt
+voice/_a.wav out/a.wav C4 100 "" 0 500 60 -50 100 0 !120 AA
+voice/_i.wav out/i.wav D4 100 "" 0 500 60 -50 100 0 !120 AA
+</code></pre>
+<pre><code class="language-bash">./resampler batch list.txt --jobs 4
+</code></pre>
+<p><code>--jobs 0</code> 表示串行，默认 <code>0</code>。并行时输出顺序不保证。</p>
+<p>整个批量过程共享单个引擎实例：ONNX 模型只加载一次，多行渲染不再各自
+重复载入 97MB 模型。由于推理会话内部以互斥锁保护，<code>--jobs</code> 的加速主要
+来自预处理并行与省去重复加载，推理部分仍为串行——排版机场景建议保持
+<code>--jobs</code> 等于物理核数的一半左右即可，盲目调大无额外收益。</p>
+<h2 id="info"><a class="header" href="#info">info</a></h2>
+<p>打印版本、构建信息、配置指纹与模型状态，不产生音频。</p>
+<pre><code class="language-bash">./resampler info
+</code></pre>
+<pre><code>neural-resampler 0.1.0
+配置指纹: eb865efe4eba82b7
+--- 模型 ---
+声码器  : "models/pc_nsf_hifigan.onnx"  [已就绪]
+FCPE    : "models/fcpe.onnx"  [已就绪]
+--- 运行时 ---
+声码器后端: onnxruntime
+F0 后端    : fcpe-onnx
+</code></pre>
+<p><strong>配置指纹</strong>很有用：改了配置它会变，缓存也会随之失效。</p>
+<h2 id="selftest"><a class="header" href="#selftest">selftest</a></h2>
+<p>生成一段 440Hz 测试音，端到端跑一遍管线并校验输出非空。用于验证安装是否正常。</p>
+<pre><code class="language-bash">./resampler selftest                    # 默认输出到 target/selftest/
+./resampler selftest --out-dir /tmp/nr  # 指定目录
+</code></pre>
+<p>成功会打印 <code>自检通过</code> 并以退出码 0 结束；输出为空则报错退出。</p>
+<h2 id="config"><a class="header" href="#config">config</a></h2>
+<p>导出当前生效的配置为 YAML，便于在其基础上修改。</p>
+<pre><code class="language-bash">./resampler config my.yaml
+</code></pre>
+<h2 id="退出码"><a class="header" href="#退出码">退出码</a></h2>
+<p><code>0</code> 成功，非 <code>0</code> 失败。失败信息会打到 stderr；调高 <code>--log-level debug</code> 可以看到
+模型加载、后端选择等细节。</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="配置文件"><a class="header" href="#配置文件">配置文件</a></h1>
+<p>默认配置编译期嵌入在二进制里。想改的话先导出一份：</p>
+<pre><code class="language-bash">./resampler config my.yaml
+./resampler --config my.yaml render voice/_a.wav out.wav A4
+</code></pre>
+<blockquote>
+<p>⚠️ <code>mel.*</code> 与 <code>f0.*</code> 的数值是<strong>跟着模型走的</strong>。换成不同规格的 ONNX 模型时，
+必须同步修改这些参数，否则输出会发闷、失真甚至完全无声。用默认模型就不要动它们。</p>
+</blockquote>
+<h2 id="models_dir"><a class="header" href="#models_dir">models_dir</a></h2>
+<p>模型根目录。配置里各 <code>model</code> 字段都是相对它的路径，<strong>不要再写一遍 <code>models/</code></strong>。</p>
+<pre><code class="language-yaml">models_dir: "models"     # ✅ 则 vocoder.model 写 "pc_nsf_hifigan.onnx"
+</code></pre>
+<h2 id="mel--频谱分析"><a class="header" href="#mel--频谱分析">mel —— 频谱分析</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>字段</th><th>默认</th><th>说明</th></tr>
+</thead>
+<tbody>
+<tr><td><code>sample_rate</code></td><td>44100</td><td>分析采样率</td></tr>
+<tr><td><code>n_fft</code></td><td>2048</td><td>FFT 点数</td></tr>
+<tr><td><code>win_size</code></td><td>2048</td><td>窗长</td></tr>
+<tr><td><code>hop_size</code></td><td>512</td><td>渲染帧移</td></tr>
+<tr><td><code>origin_hop_size</code></td><td>128</td><td>分析帧移（更细，用于时域插值）</td></tr>
+<tr><td><code>n_mels</code></td><td>128</td><td>Mel bin 数</td></tr>
+<tr><td><code>fmin</code> / <code>fmax</code></td><td>40 / 16000</td><td>频率范围（Hz）</td></tr>
+<tr><td><code>clip_val</code></td><td><code>1e-9</code></td><td>对数压缩下限</td></tr>
+<tr><td><code>magnitude_eps</code></td><td>0.0</td><td>幅度地板，<code>0</code> = 直接 <code>abs()</code></td></tr>
+<tr><td><code>mel_scale</code></td><td><code>slaney</code></td><td>标度：<code>slaney</code>（librosa 默认）/ <code>htk</code></td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="f0--音高提取"><a class="header" href="#f0--音高提取">f0 —— 音高提取</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>字段</th><th>默认</th><th>说明</th></tr>
+</thead>
+<tbody>
+<tr><td><code>backend</code></td><td><code>auto</code></td><td><code>auto</code> / <code>fcpe</code> / <code>world</code> / <code>none</code></td></tr>
+<tr><td><code>mode</code></td><td><code>hybrid</code></td><td><code>score</code> / <code>source</code> / <code>hybrid</code>，见 <a href="#f0-生成模式">F0 模式</a></td></tr>
+<tr><td><code>model</code></td><td><code>fcpe.onnx</code></td><td>FCPE 模型文件名</td></tr>
+<tr><td><code>sample_rate</code></td><td>16000</td><td>FCPE 输入采样率</td></tr>
+<tr><td><code>hop_size</code> / <code>win_size</code> / <code>n_fft</code></td><td>160 / 1024 / 1024</td><td>FCPE 频谱参数</td></tr>
+<tr><td><code>mel_bins</code></td><td>128</td><td>FCPE 的 Mel bin 数</td></tr>
+<tr><td><code>fmin</code> / <code>fmax</code></td><td>0 / 8000</td><td>FCPE 频率范围</td></tr>
+<tr><td><code>f0_min</code> / <code>f0_max</code></td><td>80 / 880</td><td>有效 F0 范围（Hz），超出视为无效</td></tr>
+<tr><td><code>uv_threshold</code></td><td>0.006</td><td>置信度低于此值判为清音</td></tr>
+<tr><td><code>uv_mask</code></td><td>true</td><td>把清音帧的 F0 置零</td></tr>
+<tr><td><code>max_deviation_cents</code></td><td>100.0</td><td>hybrid 模式允许的最大自然偏移</td></tr>
+<tr><td><code>smoothing_ms</code></td><td>40.0</td><td>基准曲线平滑窗口</td></tr>
+<tr><td><code>decoder</code></td><td><code>local_argmax</code></td><td>latent→cent 解码：<code>local_argmax</code> / <code>argmax</code></td></tr>
+<tr><td><code>local_argmax_width</code></td><td>4</td><td>单侧窗口宽度（总窗口 2×width+1）</td></tr>
+<tr><td><code>cent_f0_min</code> / <code>cent_f0_max</code></td><td>32.70 / 1975.5</td><td>cent 表频率范围（C1~B6）</td></tr>
+<tr><td><code>clip_val</code></td><td><code>1e-5</code></td><td>F0 分析的对数压缩下限</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="vocoder--声码器"><a class="header" href="#vocoder--声码器">vocoder —— 声码器</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>字段</th><th>默认</th><th>说明</th></tr>
+</thead>
+<tbody>
+<tr><td><code>backend</code></td><td><code>ort</code></td><td>推理后端</td></tr>
+<tr><td><code>model</code></td><td><code>pc_nsf_hifigan.onnx</code></td><td>声码器模型</td></tr>
+<tr><td><code>hnsep_model</code></td><td><code>hnsep.onnx</code></td><td>可选，谐波/噪声分离</td></tr>
+<tr><td><code>mel_input</code> / <code>f0_input</code></td><td><code>mel</code> / <code>f0</code></td><td>输入节点名</td></tr>
+<tr><td><code>output</code></td><td><code>audio</code></td><td>输出节点名</td></tr>
+<tr><td><code>mel_layout</code></td><td><code>auto</code></td><td><code>auto</code> / <code>channels_first</code> / <code>frames_first</code></td></tr>
+<tr><td><code>providers</code></td><td><code>[cpu]</code></td><td>按顺序尝试：<code>cpu</code> / <code>directml</code> / <code>cuda</code> / <code>coreml</code></td></tr>
+</tbody>
+</table>
+</div>
+<p><code>mel_layout: auto</code> 会读模型元数据自动判断输入是 <code>[1,n_mels,T]</code> 还是 <code>[1,T,n_mels]</code>。
+若你的模型被误判、输出异常，可显式指定。</p>
+<h2 id="processing--处理"><a class="header" href="#processing--处理">processing —— 处理</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>字段</th><th>默认</th><th>说明</th></tr>
+</thead>
+<tbody>
+<tr><td><code>loop_mode</code></td><td>true</td><td>长音符时对元音段做反射循环拼接</td></tr>
+<tr><td><code>fill</code></td><td>6</td><td>首尾额外保留的帧数</td></tr>
+<tr><td><code>trim_silence</code></td><td>false</td><td>分析前裁剪静音</td></tr>
+<tr><td><code>silence_threshold_db</code></td><td>-52.0</td><td>静音判定阈值</td></tr>
+<tr><td><code>gender</code></td><td>0</td><td>默认性别偏移（对应 <code>g</code> 标记）</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="output--输出"><a class="header" href="#output--输出">output —— 输出</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>字段</th><th>默认</th><th>说明</th></tr>
+</thead>
+<tbody>
+<tr><td><code>sample_rate</code></td><td>44100</td><td>输出采样率</td></tr>
+<tr><td><code>bit_depth</code></td><td>16</td><td><code>16</code>/<code>24</code>/<code>32</code> 整数 PCM，<code>0</code> 为 32 位浮点</td></tr>
+<tr><td><code>peak_limit</code></td><td>1.0</td><td>峰值上限</td></tr>
+<tr><td><code>wave_norm</code></td><td>true</td><td>启用响度归一化</td></tr>
+<tr><td><code>loudness_target</code></td><td>-16.0</td><td>目标响度</td></tr>
+<tr><td><code>loudness_block_ms</code></td><td>400.0</td><td>响度统计块大小</td></tr>
+<tr><td><code>fade_in_ms</code> / <code>fade_out_ms</code></td><td>0.0 / 0.0</td><td>淡入淡出时长</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="cache--特征缓存"><a class="header" href="#cache--特征缓存">cache —— 特征缓存</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>字段</th><th>默认</th><th>说明</th></tr>
+</thead>
+<tbody>
+<tr><td><code>enabled</code></td><td>true</td><td>启用缓存</td></tr>
+<tr><td><code>extension</code></td><td><code>nrc</code></td><td>缓存文件后缀</td></tr>
+<tr><td><code>zstd_level</code></td><td>3</td><td>压缩等级</td></tr>
+<tr><td><code>dir</code></td><td>null</td><td>缓存目录，<code>null</code> 表示与输入同目录</td></tr>
+</tbody>
+</table>
+</div>
+<p>缓存键包含源文件大小、修改时间与配置指纹，<strong>改了配置会自动失效</strong>，不用手动清理。</p>
+<h2 id="runtime--运行时"><a class="header" href="#runtime--运行时">runtime —— 运行时</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>字段</th><th>默认</th><th>说明</th></tr>
+</thead>
+<tbody>
+<tr><td><code>log_level</code></td><td><code>info</code></td><td>日志级别</td></tr>
+<tr><td><code>log_format</code></td><td><code>text</code></td><td><code>text</code> / <code>json</code></td></tr>
+<tr><td><code>intra_op_threads</code></td><td>0</td><td>算子内线程数，<code>0</code> = 自动</td></tr>
+<tr><td><code>inter_op_threads</code></td><td>0</td><td>算子间线程数，<code>0</code> = 自动</td></tr>
+</tbody>
+</table>
+</div>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="f0-生成模式"><a class="header" href="#f0-生成模式">F0 生成模式</a></h1>
+<p>F0（基频）曲线决定了输出唱多高、怎么滑音。配置 <code>f0.mode</code> 决定 F0 从哪来。</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>模式</th><th>行为</th><th>适用场景</th></tr>
+</thead>
+<tbody>
+<tr><td><code>score</code></td><td>F0 完全来自乐谱（音名 + pitchBend），与原始 HiFiSampler 一致</td><td>需要精确贴合乐谱</td></tr>
+<tr><td><code>source</code></td><td>用样本自身的 F0 曲线整体移调到目标音高</td><td>希望保留原样本的颤音/滑音</td></tr>
+<tr><td><code>hybrid</code></td><td>乐谱给出绝对音高，样本 F0 提供自然偏移与清浊判定</td><td><strong>默认</strong>，兼顾准确与自然</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="score"><a class="header" href="#score">score</a></h2>
+<p>完全忽略样本本身的音高，按乐谱生成 F0。结果最可控、最贴合 MIDI，
+但也会丢掉样本里天然的颤音和音色起伏，听起来可能偏“电子“。</p>
+<p>适合：需要严格对 pitch 的工程、做和声堆叠。</p>
+<h2 id="source"><a class="header" href="#source">source</a></h2>
+<p>把样本自己的 F0 曲线整体平移到目标音高。样本的颤音、滑音、气息都被保留，
+听起来最“像原声库“，但绝对音高会对不齐乐谱（样本本身唱得偏高就会一直偏高）。</p>
+<p>适合：重视自然感、乐谱本身也是从样本扒出来的情况。</p>
+<h2 id="hybrid默认"><a class="header" href="#hybrid默认">hybrid（默认）</a></h2>
+<p>以乐谱为绝对基准，再把样本 F0 的<strong>相对偏移</strong>叠加上去，并用样本的清浊判定来区分
+有声/清音帧。这样既能对上音高，又保留了自然的起伏。</p>
+<p>偏移量受 <code>f0.max_deviation_cents</code> 限制（默认 100 cent，即一个半音），
+防止样本极端跑偏把音高带歪。基准曲线的平滑窗口由 <code>f0.smoothing_ms</code> 控制（默认 40ms）。</p>
+<p>适合：绝大多数场景。想更贴合乐谱就调小 <code>max_deviation_cents</code>，
+想更自然就调大它（或直接用 <code>source</code>）。</p>
+<h2 id="怎么选"><a class="header" href="#怎么选">怎么选</a></h2>
+<p>先用默认的 <code>hybrid</code>。如果觉得音高不够准，往 <code>score</code> 靠；
+如果觉得太死板，往 <code>source</code> 靠。三者的差别在一个音符上可能不明显，
+连成一句旋律就能听出来了。</p>
+<h2 id="关于-f0-后端"><a class="header" href="#关于-f0-后端">关于 F0 后端</a></h2>
+<p><code>f0.backend: auto</code> 时的优先级：</p>
+<ol>
+<li><strong>FCPE（ONNX）</strong> —— 歌声场景最稳，需要 <code>fcpe.onnx</code></li>
+<li><strong>内置 DSP</strong> —— DIO/Harvest 风格，无需模型</li>
+<li><strong>纯乐谱</strong> —— 兜底</li>
+</ol>
+<p><code>resampler info</code> 的 <code>F0 后端</code> 一行会告诉你当前实际用的是哪个。</p>
+<blockquote>
+<p>FCPE 的输出是 <strong>360 类的 cent 分类 latent</strong>，不是直接的 F0 值。
+程序会按官方流程解码：局部 argmax（±4 类）加权平均 → <code>f0 = 10 · 2^(cent/1200)</code>，
+置信度 ≤ <code>f0.uv_threshold</code>（默认 0.006）的帧判为清音。</p>
+</blockquote>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="故障排查"><a class="header" href="#故障排查">故障排查</a></h1>
+<p>遇到问题时，<strong>先用命令行复现</strong>。编辑器里的报错通常信息很少，而命令行会给出具体原因：</p>
+<pre><code class="language-bash">./resampler --log-level debug render &lt;样本&gt; /tmp/t.wav C4 100 "" 0 500 0 0 100 0 '!120' AA
+</code></pre>
+<h2 id="症状对照表"><a class="header" href="#症状对照表">症状对照表</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>症状</th><th>可能原因</th><th>处理</th></tr>
+</thead>
+<tbody>
+<tr><td><code>info</code> 里模型显示 <code>[缺失]</code></td><td>模型没放到 <code>models/</code></td><td>跑 <code>./download_models.sh</code>（Windows: <code>.\download_models.ps1</code>），或用 <code>--models</code> 指向实际目录</td></tr>
+<tr><td>下载模型很慢或失败</td><td>GitHub 直连不畅</td><td>脚本会自动切 gh-proxy 镜像；也可 <code>NR_MODEL_MIRROR=https://gh-proxy.com/</code> 强制走镜像</td></tr>
+<tr><td>声码器后端是 <code>stub</code></td><td>同上</td><td>同上。<strong>Stub 只用于连通性验证，音质不可用</strong></td></tr>
+<tr><td>F0 后端是 <code>world-dio</code></td><td><code>fcpe.onnx</code> 缺失</td><td>功能正常，只是歌声场景略不稳；想用 FCPE 就补模型</td></tr>
+<tr><td>输出长度明显不对</td><td><code>length</code> 单位是<strong>毫秒</strong></td><td>想要 1 秒就传 <code>1000</code>，不是 <code>44100</code></td></tr>
+<tr><td>输出几乎无声</td><td>输入样本过小 / 响度归一化把声音压掉了</td><td>检查输入音量；试 <code>output.wave_norm: false</code> 对比</td></tr>
+<tr><td>声音发闷、像被捂住</td><td><code>mel.*</code> 与模型规格不匹配</td><td>恢复默认 <code>mel.*</code>；确认 <code>mel_scale: slaney</code></td></tr>
+<tr><td>声音破碎、有金属声</td><td><code>mel_layout</code> 判断错误</td><td>显式设 <code>vocoder.mel_layout: channels_first</code> 或 <code>frames_first</code> 试</td></tr>
+<tr><td>音高整体不对</td><td>音名格式 / F0 模式</td><td>确认音名如 <code>C4</code>；换 <code>f0.mode</code> 试（见 <a href="#f0-生成模式">F0 模式</a>）</td></tr>
+<tr><td>编译报 ort 链接失败</td><td>同时启用了多个 GPU feature</td><td><strong>不要用 <code>--all-features</code></strong>，GPU feature 互斥</td></tr>
+<tr><td>进程退出时报 SIGSEGV（exit 139）</td><td><code>load-dynamic</code> 链接时 dylib 版本不匹配</td><td>见下方 <a href="#load-dynamic-版本约束">load-dynamic 版本约束</a></td></tr>
+<tr><td>每次渲染都很慢</td><td>缓存未命中</td><td>确认 <code>cache.enabled: true</code>；改配置会换指纹导致重建</td></tr>
+<tr><td>macOS 提示「无法打开」</td><td>二进制未签名</td><td><code>xattr -d com.apple.quarantine ./resampler</code></td></tr>
+<tr><td>UTAU 里没反应</td><td>路径含空格或中文</td><td>把程序放到纯英文无空格路径，如 <code>C:\nr\</code></td></tr>
+<tr><td>日志里出现 pitchBend 告警</td><td>pitchBend 字符串长度异常</td><td>已容错处理，只会丢掉尾部字符，不影响整体渲染</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="判断问题出在哪一层"><a class="header" href="#判断问题出在哪一层">判断问题出在哪一层</a></h2>
+<p>按这个顺序排查，能快速定位：</p>
+<p><strong>1. 模型在不在？</strong></p>
+<pre><code class="language-bash">./resampler info
+</code></pre>
+<p>两个 <code>[已就绪]</code> 才算完整。</p>
+<p><strong>2. 引擎能不能出声？</strong></p>
+<pre><code class="language-bash">./resampler selftest
+</code></pre>
+<p>用内置生成的 440Hz 测试音跑一遍。如果这里都失败，问题在引擎/模型，
+与你的声库无关。</p>
+<p><strong>3. 你的样本能不能出声？</strong></p>
+<pre><code class="language-bash">./resampler render &lt;你的样本&gt; /tmp/t.wav C4
+</code></pre>
+<p>selftest 通过但这里失败，问题在样本本身（格式、采样率、时长）。</p>
+<p><strong>4. 编辑器参数对不对？</strong></p>
+<p>命令行能出声而编辑器不能，问题在编辑器的调用参数或路径配置。</p>
+<h2 id="日志"><a class="header" href="#日志">日志</a></h2>
+<p>调高日志级别可以看到模型加载、后端选择、Mel 形状、F0 统计等细节：</p>
+<pre><code class="language-bash">./resampler --log-level debug --models ./models info
+</code></pre>
+<p><code>--log-format json</code> 输出结构化日志，便于脚本处理：</p>
+<pre><code class="language-bash">./resampler --log-format json render a.wav b.wav C4 2&gt;&amp;1 | grep '"level":"error"'
+</code></pre>
+<h2 id="load-dynamic-版本约束"><a class="header" href="#load-dynamic-版本约束">load-dynamic 版本约束</a></h2>
+<p>默认分发产物把 ONNX Runtime <strong>静态链接</strong>进二进制，无此问题。
+但如果你以 <code>load-dynamic</code> 方式自行编译（运行时加载 <code>libonnxruntime.so</code> /
+<code>onnxruntime.dll</code>），有一个隐蔽的坑：</p>
+<p><strong>dylib 的版本必须与 ort-sys 构建时期望的版本精确一致</strong>（如 1.28.0）。
+用相邻版本（如 1.19.2、1.22.0）时——渲染完全正常，但<strong>进程退出阶段会
+SIGSEGV</strong>（exit 139）：崩溃点在 <code>exit() → ld-linux 析构 → libonnxruntime</code>，
+gdb 栈回溯看起来像库卸载问题，实际是 ABI 不兼容导致的清理路径越界。</p>
+<p>排查方法：</p>
+<ul>
+<li>确认加载的库版本：<code>ldd resampler | grep onnxruntime</code> 后查该 so 的版本</li>
+<li>换成构建配置所对应的精确版本，或改用静态链接（默认分发模式）</li>
+<li>CI 宿主若检查退出码，此问题会表现为「渲染成功但任务失败」</li>
+</ul>
+<h2 id="缓存相关"><a class="header" href="#缓存相关">缓存相关</a></h2>
+<p>缓存文件是输入同目录下的 <code>.nrc</code>（zstd 压缩）。缓存键 = 源文件路径 + 大小 + mtime +
+配置指纹 + 采样率，所以：</p>
+<ul>
+<li>改了配置 → 自动失效重建</li>
+<li>换了源文件 → 自动失效重建</li>
+<li>手动删 <code>.nrc</code> 只会让下次渲染变慢一次，不会出错</li>
+</ul>
+<p>想关掉缓存：<code>cache.enabled: false</code>。</p>
+<h2 id="还是不行"><a class="header" href="#还是不行">还是不行</a></h2>
+<p>带上这些信息到 <a href="https://github.com/Henley04/neural-resampler/issues">Issues</a> 提问：</p>
+<ul>
+<li><code>./resampler info</code> 的完整输出</li>
+<li>复现用的命令行与参数</li>
+<li><code>--log-level debug</code> 的日志</li>
+<li>操作系统与平台</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="常见问题"><a class="header" href="#常见问题">常见问题</a></h1>
+<h3 id="需要改我的声库吗"><a class="header" href="#需要改我的声库吗">需要改我的声库吗？</a></h3>
+<p>不需要。WAV 和 <code>oto.ini</code> 原样保留，只把编辑器里的 resampler 指向本程序。</p>
+<h3 id="为什么发布包里没有模型"><a class="header" href="#为什么发布包里没有模型">为什么发布包里没有模型？</a></h3>
+<p>两个原因：模型合计约 100 MB；而且它们的许可不一定允许再分发。
+所以模型由使用者自行获取，发布包里附带了 <code>download_models.sh</code>
+（Windows 为 <code>download_models.ps1</code>）。</p>
+<h3 id="没有模型能跑吗"><a class="header" href="#没有模型能跑吗">没有模型能跑吗？</a></h3>
+<p>分场景。<code>resampler selftest</code> 与 <code>resampler info</code> 不受影响，可以验证管线连通性；
+但 <code>render</code> / <code>batch</code> / UTAU 协议渲染在模型缺失时会<strong>直接报错退出</strong>（三语提示，
+含解决方法），不会输出音质不可用的音频。离线自测确需降级运行时，加
+<code>--allow-stub</code> 或设 <code>NR_ALLOW_STUB=1</code>。</p>
+<h3 id="在-openutau-里渲染报错声码器模型缺失"><a class="header" href="#在-openutau-里渲染报错声码器模型缺失">在 OpenUtau 里渲染报错「声码器模型缺失」？</a></h3>
+<p>OpenUtau 安装 resampler 时把 exe <strong>复制</strong>进自己的 <code>Resamplers/</code> 目录，模型不会
+跟着走。v0.1.3 起，这种情况不再是静默降级（以前能出声但音质糊），而是渲染失败
+并弹出三语错误说明；resampler 旁边还会生成 <code>MODEL-MISSING-READ-ME.txt</code>。
+解决（二选一）：</p>
+<ol>
+<li><strong>推荐</strong>：在发布包目录运行一次 <code>download_models.sh</code> / <code>download_models.ps1</code>——
+脚本会自动把 <code>NR_MODELS_DIR</code> 写入用户级环境变量（此后 exe 放哪都行；
+注意使用期间不要移动 models 目录）</li>
+<li>或把 <code>models/</code> 复制为 <code>Resamplers/models/</code>（与 exe 同级）</li>
+</ol>
+<p>然后用 <code>resampler info</code> 确认声码器后端显示 <code>onnxruntime</code> 而不是 <code>stub</code>。</p>
+<h3 id="为什么第一次渲染很慢"><a class="header" href="#为什么第一次渲染很慢">为什么第一次渲染很慢？</a></h3>
+<p>首次要做 Mel 分析、F0 提取，还要加载 ONNX 模型。同一输入的第二次渲染会走缓存，
+快很多。整段旋律渲染时，模型只加载一次。</p>
+<h3 id="支持-gpu-吗"><a class="header" href="#支持-gpu-吗">支持 GPU 吗？</a></h3>
+<p>支持，但需要用对应 feature 自行编译：</p>
+<pre><code class="language-bash">cargo build --release --features cuda      # NVIDIA
+cargo build --release --features directml  # Windows
+cargo build --release --features coreml    # macOS
+</code></pre>
+<p><strong>不要同时启用多个</strong>，也不要用 <code>--all-features</code>——feature 互斥，会导致链接失败。
+默认产物走 CPU。</p>
+<h3 id="输出长度怎么控制"><a class="header" href="#输出长度怎么控制">输出长度怎么控制？</a></h3>
+<p>第 7 个参数 <code>length</code>，<strong>单位是毫秒</strong>。想要 1 秒的输出传 <code>1000</code>。
+传 <code>44100</code> 会得到 44.1 秒。</p>
+<h3 id="能同时支持-utau-和-openutau-吗"><a class="header" href="#能同时支持-utau-和-openutau-吗">能同时支持 UTAU 和 OpenUtau 吗？</a></h3>
+<p>能，两者用的是同一套 13 参数协议，同一个二进制即可。
+配置方式见 <a href="#在-utau-中使用">UTAU</a> 和 <a href="#在-openutau-中使用">OpenUtau</a>。</p>
+<h3 id="flags-全都生效吗"><a class="header" href="#flags-全都生效吗">flags 全都生效吗？</a></h3>
+<p>不是。当前实际生效的只有 <code>g</code>、<code>t</code>、<code>A</code>、<code>P</code>、<code>He</code>、<code>HG</code> 六个，
+其余标记会被解析但暂不影响输出。详见 <a href="#支持的-flags">UTAU 参数</a>。</p>
+<h3 id="输出是确定性的吗"><a class="header" href="#输出是确定性的吗">输出是确定性的吗？</a></h3>
+<p>是。同样的输入 + 同样的参数 + 同样的配置，输出逐样本一致，没有随机性。</p>
+<h3 id="声音发闷失真怎么办"><a class="header" href="#声音发闷失真怎么办">声音发闷/失真怎么办？</a></h3>
+<p>99% 是 Mel 参数与模型规格不匹配。恢复默认 <code>mel.*</code> 配置，
+确认 <code>mel_scale: slaney</code>、<code>sample_rate: 44100</code>、<code>n_mels: 128</code>。
+如果换了非默认模型，必须同步改这些参数。</p>
+<h3 id="缓存文件可以删吗"><a class="header" href="#缓存文件可以删吗">缓存文件可以删吗？</a></h3>
+<p>可以，删了只是下次渲染慢一点。缓存键包含源文件大小、修改时间和配置指纹，
+正常情况下不需要手动清理。</p>
+<h3 id="商业用途可以吗"><a class="header" href="#商业用途可以吗">商业用途可以吗？</a></h3>
+<p>代码是 MIT。但<strong>模型的许可由各自来源决定</strong>，商用前请自行确认。
+这也是模型不随仓库分发的原因之一。</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+
+            </nav>
+
+        </div>
+
+        <template id=fa-eye><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/></svg></span></template>
+        <template id=fa-eye-slash><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z"/></svg></span></template>
+        <template id=fa-copy><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M502.6 70.63l-61.25-61.25C435.4 3.371 427.2 0 418.7 0H255.1c-35.35 0-64 28.66-64 64l.0195 256C192 355.4 220.7 384 256 384h192c35.2 0 64-28.8 64-64V93.25C512 84.77 508.6 76.63 502.6 70.63zM464 320c0 8.836-7.164 16-16 16H255.1c-8.838 0-16-7.164-16-16L239.1 64.13c0-8.836 7.164-16 16-16h128L384 96c0 17.67 14.33 32 32 32h47.1V320zM272 448c0 8.836-7.164 16-16 16H63.1c-8.838 0-16-7.164-16-16L47.98 192.1c0-8.836 7.164-16 16-16H160V128H63.99c-35.35 0-64 28.65-64 64l.0098 256C.002 483.3 28.66 512 64 512h192c35.2 0 64-28.8 64-64v-32h-47.1L272 448z"/></svg></span></template>
+        <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
+        <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr-ef4e11c1.min.js"></script>
+        <script src="mark-09e88c2c.min.js"></script>
+        <script src="searcher-09f2665d.js"></script>
+
+        <script src="clipboard-1626706a.min.js"></script>
+        <script src="highlight-abc7f01d.js"></script>
+        <script src="book-609e4cb8.js"></script>
+
+        <!-- Custom JS scripts -->
+
+        <script>
+        window.addEventListener('load', function() {
+            window.setTimeout(window.print, 100);
+        });
+        </script>
+
+
+    </div>
+    </body>
+</html>
