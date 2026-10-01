@@ -19,6 +19,22 @@ OpenUtau 通过 `Resamplers` 目录管理第三方 resampler。它按标准 resa
 > （如 `resampler.yaml`）作为 Resampler Manifest，向 OpenUtau 声明本引擎支持的
 > flags（expressions），表达式面板会据此显示建议值与范围。
 
+## 模型放置（重要）
+
+OpenUtau 安装 resampler 时会把可执行文件**复制**到自己的 `Resamplers/` 目录，
+渲染时的工作目录是 OpenUtau 安装根目录——那里的 `models/` 不存在，引擎会
+**静默降级**（Stub 声码器 + 内置 DSP F0：能出声、不报错，但音质不可用）。
+
+模型目录按以下顺序解析：
+
+1. 命令行 `--models`（OpenUtau 不会传，仅供 CLI 手动调用）
+2. 环境变量 `NR_MODELS_DIR`（推荐：设一次，全局生效）
+3. 可执行文件**同级**的 `models/`（即 `Resamplers/models/`）
+4. 当前工作目录的 `models/`（发布包布局）
+
+OpenUtau 场景推荐 2 或 3。放好后用 `resampler info` 确认声码器后端不再是
+`stub`（应显示 `onnxruntime`）。
+
 ## 路径注意事项
 
 * 放进 `Resamplers` 目录（或拖放安装）后，路径由 OpenUtau 管理，无需手动指定

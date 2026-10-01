@@ -35,6 +35,15 @@ OpenUtau 窗口选 "Install as resampler"），渲染器切到 `CLASSIC` 后点�
 ⚙ 齿轮选择它。声库的 `oto.ini` 与 WAV 完全不用改动。
 参见 [OpenUtau wiki: Resamplers and Wavtools](https://github.com/openutau/OpenUtau/wiki/Resamplers-and-Wavtools)。
 
+## 模型目录解析
+
+OpenUtau 安装 resampler 时会把可执行文件**复制**进 `Resamplers/`，渲染时的
+工作目录下没有 `models/`，引擎会静默降级（能出声但音质不可用）。模型目录按
+以下顺序解析：命令行 `--models` > 环境变量 `NR_MODELS_DIR` > 可执行文件同级
+`models/`（即 `Resamplers/models/`）> 工作目录 `models/`。OpenUtau 场景推荐
+设 `NR_MODELS_DIR` 或把模型放进 `Resamplers/models/`，并用 `resampler info`
+确认声码器后端为 `onnxruntime`。
+
 ## 支持的 flags
 
 | 标记 | 含义 | 实现 |

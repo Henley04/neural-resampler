@@ -37,6 +37,18 @@ switch the renderer to `CLASSIC`, then click the ⚙ gear next to it and select
 it. The voicebank's `oto.ini` and WAV files need no changes at all.
 See the [OpenUtau wiki: Resamplers and Wavtools](https://github.com/openutau/OpenUtau/wiki/Resamplers-and-Wavtools).
 
+## Model directory resolution
+
+When OpenUtau installs a resampler it **copies** the executable into
+`Resamplers/`; there is no `models/` folder in the working directory at render
+time, so the engine degrades silently (audio is produced but quality is
+unusable). The model directory is resolved in this order: command-line
+`--models` > the `NR_MODELS_DIR` environment variable > a `models/` folder next
+to the executable (i.e. `Resamplers/models/`) > a `models/` folder in the
+working directory. For OpenUtau, set `NR_MODELS_DIR` or put the models into
+`Resamplers/models/`, then confirm with `resampler info` that the vocoder
+backend shows `onnxruntime`.
+
 ## Supported Flags
 
 | Flag | Meaning | Implementation |

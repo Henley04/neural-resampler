@@ -38,6 +38,18 @@ resampler <in.wav> <out.wav> <pitch> <velocity> <flags> <offset> <length_req>
 は一切変更する必要がありません。
 [OpenUtau wiki: Resamplers and Wavtools](https://github.com/openutau/OpenUtau/wiki/Resamplers-and-Wavtools) を参照してください。
 
+## モデルディレクトリの解決
+
+OpenUtau がリサンプラーをインストールすると、実行ファイルを `Resamplers/`
+へ**コピー**します。レンダリング時の作業ディレクトリに `models/` はないため、
+エンジンは静かに劣化します（音は出ますが音質は実用になりません）。モデル
+ディレクトリは次の順で解決されます：コマンドラインの `--models` > 環境変数
+`NR_MODELS_DIR` > 実行ファイルと同じ階層の `models/`（つまり
+`Resamplers/models/`）> 作業ディレクトリの `models/`。OpenUtau では
+`NR_MODELS_DIR` を設定するか、モデルを `Resamplers/models/` に置き、
+`resampler info` でボコーダのバックエンドが `onnxruntime` であることを
+確認してください。
+
 ## サポートされるフラグ
 
 | フラグ | 意味 | 実装 |

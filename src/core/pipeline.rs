@@ -652,14 +652,56 @@ pub fn run_pipeline_default(params: &UtauParams) -> Result<RenderStats> {
     engine.run_pipeline(params)
 }
 
+/// 模型目录解析链：显式参数 > `NR_MODELS_DIR` > exe 同级 `models/` > None（配置默认）。
+///
+/// exe 同级回退覆盖 UTAU/OpenUtau 的安装场景：编辑器会把 resampler 可执行文件
+/// 复制进自己的目录（如 OpenUtau 的 `Resamplers/`），而渲染时的当前工作目录是
+/// 编辑器安装根目录——工作目录下的 `models/` 几乎必然不存在，引擎会**静默降级**
+/// （Stub 声码器 + DSP F0，exit 0 正常出文件，用户难以察觉）。此时把模型放到
+/// exe 同级的 `models/` 下，或设置 `NR_MODELS_DIR` 环境变量，即可命中真实模型。
+pub fn resolve_models_dir(explicit: Option<&Path>) -> Option<PathBuf> {
+    if let Some(dir) = explicit {
+        log::info!("模型目录：命令行 --models 指定 {:?}", dir);
+        return Some(dir.to_path_buf());
+    }
+    if let Ok(dir) = std::env::var("NR_MODELS_DIR") {
+        if !dir.is_empty() {
+            let dir = PathBuf::from(dir);
+            if dir.is_dir() {
+                log::info!("模型目录：NR_MODELS_DIR 指定 {:?}", dir);
+                return Some(dir);
+            }
+            log::warn!("环境变量 NR_MODELS_DIR={dir:?} 不是有效目录，忽略");
+        }
+    }
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(dir) = exe_adjacent_models(&exe) {
+            log::info!(
+                "模型目录：可执行文件同级 {:?}（可执行文件位于 {:?}）",
+                dir,
+                exe
+            );
+            return Some(dir);
+        }
+    }
+    log::debug!("模型目录：未显式指定，使用配置默认（相对工作目录的 models/）");
+    None
+}
+
+/// exe 同级是否存在 `models/` 目录；存在则返回该目录。
+fn exe_adjacent_models(exe: &Path) -> Option<PathBuf> {
+    let dir = exe.parent()?.join("models");
+    dir.is_dir().then_some(dir)
+}
+
 /// 载入配置文件并初始化引擎。
 pub fn engine_from_config(config: Option<&Path>, models_dir: Option<&Path>) -> Result<Engine> {
     let mut cfg = match config {
         Some(p) => ResamplerConfig::load(p)?,
         None => ResamplerConfig::default_yaml()?,
     };
-    if let Some(dir) = models_dir {
-        cfg.models_dir = dir.to_path_buf();
+    if let Some(dir) = resolve_models_dir(models_dir) {
+        cfg.models_dir = dir;
     }
     Engine::new(cfg)
 }
@@ -674,6 +716,42 @@ mod tests {
             .map(|i| (2.0 * std::f32::consts::PI * freq * i as f32 / sr as f32).sin() * 0.4)
             .collect();
         crate::core::audio::write_wav(path, &samples, sr, 16).unwrap();
+    }
+
+    #[test]
+    fn exe_adjacent_models_found() {
+        // 模拟 OpenUtau "Install as resampler"：exe 被复制进 Resamplers/，
+        // 模型放在 exe 同级 models/ 下
+        let base = std::env::temp_dir().join(format!("nr-exe-adjacent-{}", std::process::id()));
+        let exe_dir = base.join("Resamplers");
+        let models = exe_dir.join("models");
+        std::fs::create_dir_all(&models).unwrap();
+        let exe = exe_dir.join("resampler.exe"); // 假 exe 路径，只借其 parent
+        assert_eq!(exe_adjacent_models(&exe), Some(models));
+        // 无 models 目录时返回 None
+        let exe2 = base.join("other").join("resampler");
+        assert_eq!(exe_adjacent_models(&exe2), None);
+        std::fs::remove_dir_all(&base).ok();
+    }
+
+    #[test]
+    fn resolve_models_dir_env_var() {
+        let dir = std::env::temp_dir().join(format!("nr-env-models-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        std::env::set_var("NR_MODELS_DIR", &dir);
+        assert_eq!(resolve_models_dir(None), Some(dir.clone()));
+        // 无效目录被忽略 -> 回退到后续链（测试环境 exe 同级通常无 models -> None）
+        std::env::set_var("NR_MODELS_DIR", "/definitely/not/a/dir");
+        // 注意：沙箱/CI 的测试 exe 同级一般没有 models/；若存在也不影响本断言目标：
+        // 环境变量无效时绝不返回无效路径
+        if let Some(d) = resolve_models_dir(None) {
+            assert_ne!(d, PathBuf::from("/definitely/not/a/dir"));
+        }
+        // 显式参数优先级最高，且无视无效环境变量
+        let explicit = std::env::temp_dir().join("nr-explicit");
+        assert_eq!(resolve_models_dir(Some(&explicit)), Some(explicit.clone()));
+        std::env::remove_var("NR_MODELS_DIR");
+        std::fs::remove_dir_all(&dir).ok();
     }
 
     #[test]

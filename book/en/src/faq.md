@@ -16,6 +16,15 @@ It runs, but is of no practical value. Without models the vocoder degrades to a 
 the pipeline still completes and makes sound, but the quality is unusable. This fallback exists to make
 connectivity checks easy, not for real use. `./resampler info` tells you exactly which backend is in use.
 
+### Rendering in OpenUtau sounds wrong (as if degraded)?
+
+When OpenUtau installs a resampler it **copies** the exe into its own
+`Resamplers/` directory; the working directory at render time has no `models/`
+folder, so the engine degrades silently (sound comes out, no error is shown).
+Fix: put the models into `Resamplers/models/`, or set the `NR_MODELS_DIR`
+environment variable to the model directory. Then run `resampler info` and
+confirm the vocoder backend shows `onnxruntime` instead of `stub`.
+
 ### Why is the first render slow?
 
 The first run has to do Mel analysis and F0 extraction, and load the ONNX models. A second render of the same input

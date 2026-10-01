@@ -20,6 +20,25 @@ Following the [official OpenUtau wiki](https://github.com/openutau/OpenUtau/wiki
 > `Resamplers` directory as a Resampler Manifest, declaring to OpenUtau the flags
 > (expressions) this engine supports; the expression panel then shows suggested values and ranges.
 
+## Placing the models (important)
+
+When you install a resampler, OpenUtau **copies** the executable into its own
+`Resamplers/` directory. At render time the working directory is the OpenUtau
+installation root — the `models/` folder there does not exist, so the engine
+would **silently degrade** (Stub vocoder + built-in DSP F0: it produces audio
+without any error, but the quality is unusable).
+
+The model directory is resolved in this order:
+
+1. Command-line `--models` (OpenUtau never passes it; for manual CLI use only)
+2. The `NR_MODELS_DIR` environment variable (recommended: set once, works everywhere)
+3. A `models/` folder **next to the executable** (i.e. `Resamplers/models/`)
+4. A `models/` folder in the current working directory (release package layout)
+
+For OpenUtau, option 2 or 3 is recommended. Afterwards run `resampler info`
+and make sure the vocoder backend is no longer `stub` (it should show
+`onnxruntime`).
+
 ## Path notes
 
 * Once placed in the `Resamplers` directory (or installed via drag-and-drop), the path is managed by OpenUtau — no need to specify it manually

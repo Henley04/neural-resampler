@@ -308,8 +308,8 @@ fn cmd_info(cli: &Cli) -> Result<()> {
         None => ResamplerConfig::default_yaml()?,
     };
     let mut cfg = cfg;
-    if let Some(dir) = cli.models.as_deref() {
-        cfg.models_dir = dir.to_path_buf();
+    if let Some(dir) = neural_resampler::core::pipeline::resolve_models_dir(cli.models.as_deref()) {
+        cfg.models_dir = dir;
     }
     let vocoder = cfg.model_path(&cfg.vocoder.model);
     let fcpe = cfg.model_path(&cfg.f0.model);

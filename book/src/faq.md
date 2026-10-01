@@ -16,6 +16,13 @@
 管线仍然走通、也有声音，但音质不可用。这个降级是为了方便验证连通性，
 不是为了实际使用。`./resampler info` 会明确告诉你当前用的什么后端。
 
+### 在 OpenUtau 里渲染，音质不对（像降级了）？
+
+OpenUtau 安装 resampler 时把 exe **复制**进自己的 `Resamplers/` 目录，渲染时的
+工作目录下没有 `models/`，引擎会静默降级（能出声但不报错）。解决：把模型放到
+`Resamplers/models/`，或设置环境变量 `NR_MODELS_DIR` 指向模型目录。然后用
+`resampler info` 确认声码器后端显示 `onnxruntime` 而不是 `stub`。
+
 ### 为什么第一次渲染很慢？
 
 首次要做 Mel 分析、F0 提取，还要加载 ONNX 模型。同一输入的第二次渲染会走缓存，

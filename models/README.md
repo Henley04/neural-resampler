@@ -22,6 +22,10 @@ powershell -ExecutionPolicy Bypass -File scripts/download_models.ps1   # Windows
 模型不存在时引擎会降级运行（声码器 → Stub、F0 → 内置 DSP），管线仍可跑通，
 用于验证连通性；**音质需真实模型**。
 
+模型目录解析顺序：`--models` 参数 > 环境变量 `NR_MODELS_DIR` > 可执行文件同级
+`models/`（覆盖 OpenUtau 把 exe 复制进 `Resamplers/` 的场景）> 工作目录
+`models/`。
+
 `resampler info` 会列出每个模型的就绪状态。
 
 ---
@@ -50,6 +54,11 @@ Without models the engine degrades gracefully (vocoder → Stub, F0 → built-in
 DSP) and the pipeline still runs, which is useful for connectivity checks;
 **real audio quality requires the real models**.
 
+Model directory resolution order: the `--models` argument > the
+`NR_MODELS_DIR` environment variable > a `models/` folder next to the
+executable (covers OpenUtau copying the exe into `Resamplers/`) > a `models/`
+folder in the working directory.
+
 `resampler info` lists the ready state of each model.
 
 ---
@@ -76,5 +85,9 @@ powershell -ExecutionPolicy Bypass -File scripts/download_models.ps1   # Windows
 モデルが存在しない場合、エンジンは低下動作で実行されます（ボコーダ → Stub、
 F0 → 内蔵 DSP）。パイプライン自体は動作するため接続確認に使えますが、
 **実用音質には実モデルが必要です**。
+
+モデルディレクトリの解決順：`--models` 引数 > 環境変数 `NR_MODELS_DIR` >
+実行ファイルと同じ階層の `models/`（OpenUtau が実行ファイルを `Resamplers/`
+へコピーするケースをカバー）> 作業ディレクトリの `models/`。
 
 `resampler info` で各モデルの準備状態を一覧表示できます。
